@@ -1,0 +1,25 @@
+digraph "onet::lidar::DlphDeviceParameter"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="onet::lidar::DlphDeviceParameter",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="The DlphDeviceParameter struct."];
+  Node2 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" limit_param" ,fontname="Helvetica"];
+  Node2 [label="onet::lidar::DlphLimitParameter",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structonet_1_1lidar_1_1DlphLimitParameter.html",tooltip="The DlphLimitParameter struct It is used to record the range of some parameters individually."];
+  Node3 -> Node2 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" time_range\nfactor_range\necho_range" ,fontname="Helvetica"];
+  Node3 [label="onet::lidar::ZeroRangeParameter",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structonet_1_1lidar_1_1ZeroRangeParameter.html",tooltip=" "];
+  Node4 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" param_table_right\nparam_table_left" ,fontname="Helvetica"];
+  Node4 [label="onet::lidar::DlphParameter\lTable",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structonet_1_1lidar_1_1DlphParameterTable.html",tooltip="The DlphParameterTable struct It is used to record some pre-calculated data to make raw-data-parsing ..."];
+  Node5 -> Node4 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" RrNr\nNb" ,fontname="Helvetica"];
+  Node5 [label="onet::lidar::Vector3F",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structonet_1_1lidar_1_1Vector3F.html",tooltip=" "];
+  Node6 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" check_param" ,fontname="Helvetica"];
+  Node6 [label="onet::lidar::DlphCheckParameter",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structonet_1_1lidar_1_1DlphCheckParameter.html",tooltip=" "];
+  Node3 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" zero_range_right\nzero_range_view\nzero_range_left" ,fontname="Helvetica"];
+  Node7 -> Node1 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" lidar_param" ,fontname="Helvetica"];
+  Node7 [label="LidarParameter",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structLidarParameter.html",tooltip="The LidarParameter struct."];
+  Node8 -> Node7 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" view" ,fontname="Helvetica"];
+  Node8 [label="ViewParameter",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structViewParameter.html",tooltip="The ViewParameter struct."];
+  Node9 -> Node7 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" laser" ,fontname="Helvetica"];
+  Node9 [label="LaserParameter",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structLaserParameter.html",tooltip="The LaserParameter struct."];
+}
