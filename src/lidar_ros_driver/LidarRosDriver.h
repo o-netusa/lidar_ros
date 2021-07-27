@@ -22,6 +22,7 @@ public:
     ~LidarRosDriver() = default;
 
     void Start();
+    void Stop();
     bool IsRunning() const;
 
 private:

@@ -25,6 +25,6 @@ int main(int argc, char** argv)
 
         ros::spinOnce();
     }
-
+    dvr.Stop();
     return 0;
 }

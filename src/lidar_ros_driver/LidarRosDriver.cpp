@@ -7,7 +7,9 @@
  *************************************************************************/
 
 #include "LidarRosDriver.h"
-
+#include <common/FileSystem.h>
+#include <common/FileSystem.h>
+#include <config/DeviceParamsConfig.h>
 #include <DeviceManager.h>
 #include <LidarDevice.h>
 #include <PlaybackDevice.h>
@@ -17,19 +19,33 @@
 
 namespace onet { namespace lidar_ros {
 
-class ViewerCallback  //:public onet::lidar::DeviceCallback
+static auto param_file = (fs::path(cppbase::filesystem::GetConfigDir()) /
+                          onet::lidar::LIDAR_CHECK_FILE).string(); // default param file
+
+class ViewerCallback  :public onet::lidar::DeviceCallback
 {
 public:
-    void SetVisualizer() {}
-    // void HandlePointCloud(uint32_t frame_id, std::shared_ptr<PointCloud> cloud,[[maybe_unused]]
-    // const std::string &file_name = {})
-    //{
-    //    if (!cloud)
-    //    {
-    //        return;
-    //    }
-    //}
+    void SetVisualizer(ros::Publisher* cloud_pub)
+    {
+        m_cloud_pub=cloud_pub;
+    }
+    void HandlePointCloud(uint32_t frame_id, std::shared_ptr<PointCloud> cloud,[[maybe_unused]]
+     const std::string &file_name = {})
+    {
+        if (!cloud || m_cloud_pub==nullptr)
+        {
+            return;
+        }
+        sensor_msgs::PointCloud pointcloud;
+        pointcloud.header.stamp=ros::Time::now();
+        pointcloud.header.frame_id="sensor_frame";
+        pointcloud.points.resize(cloud.size());
+        pointcloud.points=cloud;
+        m_cloud_pub->publish(pointcloud);
+    }
     void PlaybackDone() {}
+
+    ros::Publisher* m_cloud_pub{nullptr};
 };
 
 onet::lidar::PlaybackDevice *GetPlaybackDevice(const std::vector<std::string> &file_list)
@@ -61,22 +77,287 @@ onet::lidar::LidarDevice *GetLidarDevice(const std::string &strIP, int port)
 struct LidarRosDriver::Impl
 {
     bool m_running{false};
+    bool m_playback{false};
+    std::thread m_set_thread;
     ros::NodeHandle m_node;      //节点
     ros::Publisher m_cloud_pub;  //点云发布者
 
-    ViewerCallback *m_viewcallback;
+    std::shared_ptr<ViewerCallback> m_viewcallback;
     lidar::LidarDevice *m_lidar_device{nullptr};
     lidar::PlaybackDevice *m_playback_device{nullptr};
 
     Impl(ros::NodeHandle node) : m_node(node)
     {
+        m_cloud_pub=m_node.advertise<sensor_msgs::PointCloud>("cloud",100);
+        m_viewcallback=std::make_shared<ViewerCallback>();
+        m_viewcallback->SetVisualizer(&m_cloud_pub);
         // get parameters
         // e.g.
         // m_node.getParameter()
         // ...
     }
+    void ConnectDevice()
+    {
+        std::string ip;
+        if(!m_node.getParameter("ip",ip))
+        {
+            return;
+        }
+        int port;
+        if(!m_node.getParameter("port",port))
+        {
+            return;
+        }
+        m_lidar_device=GetLidarDevice(ip,port);
+    }
 
-    void Start() {}
+    void DisconnectDevice()
+    {
+        if(!m_lidar_device) return;
+        int Type;
+        if(m_node.getParameter("DisconnectDevice",Type))
+        {
+            if(m_lidar_device->Stop())
+            {
+                m_lidar_device=nullptr;
+            }
+            else
+            {
+                ROS_INFO("Error:Failed to stop scanning on the LiDAR sensor.");
+            }
+        }
+    }
+
+    void SetLaserParameter()
+    {
+        if(m_lidar_device)
+        {
+            LaserParameter laserparam;
+            if(m_node.getParameter("LaserParameter",laserparam))
+            {
+                try
+                {
+                    m_lidar_device->SetLaser(laserparam);
+                }
+                catch (std::exception &e)
+                {
+                    ROS_INFO("Error:%s",e.what());
+                }
+            }
+        }
+    }
+    void SetEchoNumberParameter()
+    {
+        if(!m_lidar_device) return;
+        int32_t echo_number;
+         if(m_node.getParameter("echo_number",echo_number))
+         {
+             try
+             {
+                 m_lidar_device->SetEchoNumber(echo_number);
+             }
+             catch (std::exception &e)
+             {
+                 ROS_INFO("Error:%s",e.what());
+             }
+         }
+    }
+
+    void SetRawDataType()
+    {
+        if(!m_lidar_device) return;
+        int32_t type;
+        if(m_node.getParameter("RawDataType",type))
+        {
+            try
+            {
+                m_lidar_device->SetRawDataType(static_cast<onet::lidar::RawDataType>(type));
+            }
+            catch (std::exception &e)
+            {
+                ROS_INFO("Error:%s",e.what());
+            }
+        }
+    }
+    void SetScanMode()
+    {
+        if(!m_lidar_device) return;
+        ScanMode mode;
+        if(m_node.getParameter("ScanMode",mode))
+        {
+            try
+            {
+                m_lidar_device->SetScanMode(mode);
+            }
+            catch (std::exception &e)
+            {
+               ROS_INFO("Error:%s",e.what());
+            }
+        }
+    }
+    void SetViewParameter()
+    {
+        if(!m_lidar_device) return;
+        ViewParameter viewparam;
+        if(m_node.getParameter("ViewParameter",viewparam))
+        {
+            try
+            {
+                m_lidar_device->SetViewSpeed(viewparam);
+            }
+            catch (std::exception &e)
+            {
+                ROS_INFO("Error:%s",e.what());
+            }
+        }
+    }
+
+    void SetPlayback()
+    {
+        if(m_playback_device && m_playback_device->IsStarted())
+            return;
+        std::vector<std::string> files;
+        m_node.getParameter("playback",files);
+        if(files.size())
+        {
+            m_playback_device=GetPlaybackDevice(files);
+            if(m_playback_device)
+            {
+                m_viewcallback->DisconnectAll();
+                std::shared_ptr<onet::lidar::DlphDeviceParameter> dev_param;
+                onet::lidar::config::Deserialize(dev_param, param_file);
+
+                m_playback_device->SetParameter(dev_param);
+                m_playback_device->Init();
+
+                m_viewcallback->per_frame_signal.connect([&](uint32_t,std::shared_ptr<open3d::geometry::PointCloud>,const std::string &file_name) \
+                {
+                    //文件回放，文件列表滚动
+                });
+                m_viewcallback->play_done_signal.connect([&]() {
+                    if(m_playback_device && !m_playback_device->IsStarted())
+                    {
+
+                    }
+                });
+            }
+        }
+    }
+    void Play()
+    {
+        int type;
+        if(m_node.getParameter("play",type))
+        {
+            switch (type)
+            {
+            case 1: //play
+            {
+                lidar::WriteRawDataOption option;
+                if(m_node.getParameter("gatherparameter",option))
+                {
+                    if(m_playback)
+                    {
+                       if(m_playback_device)
+                       {
+                           if(!m_playback_device->Start(m_viewcallback,option))
+                           {
+                               ROS_INFO("Error:Playback failed.");
+                           }
+                       }
+                    }
+                    else
+                    {
+                        if(m_lidar_device)
+                        {
+                            if(!m_lidar_device->Start(m_viewcallback,option))
+                            {
+                                ROS_INFO("Error:Failed to start scanning on the LiDAR sensor.");
+                            }
+                        }
+                    }
+                }
+            }
+                break;
+            case 2: //pause
+            {
+                if(m_playback)
+                {
+                   if(m_playback_device && m_playback_device->IsStarted())
+                   {
+                       if(!m_playback_device->Stop())
+                       {
+                            ROS_INFO("Error:Playback stop failed");
+                       }
+                   }
+                }
+                else
+                {
+                    if(m_lidar_device && m_lidar_device->IsStarted())
+                    {
+                        if(!m_lidar_device->Stop())
+                        {
+                            ROS_INFO("Error:Lidar Device stop failed");
+                        }
+                    }
+                }
+            }
+                break;
+            case 0: //stop
+            {
+                if(m_playback)
+                {
+                   if(m_playback_device && m_playback_device->IsStarted())
+                   {
+                       if(m_playback_device->Stop())
+                       {
+                           m_playback_device=nullptr;
+                       }
+                   }
+                }
+                else
+                {
+                    if(m_lidar_device && m_lidar_device->IsStarted())
+                    {
+                        if(m_lidar_device->Stop())
+                        {
+                            m_lidar_device=nullptr;
+                        }
+                    }
+                }
+            }
+                break;
+
+            }
+        }
+    }
+
+    void Start()
+    {
+        m_set_thread=std::thread([this]{
+            this->m_running=true;
+            while (this->m_running) {
+                this->ConnectDevice();
+                this->SetLaserParameter();
+                this->DisconnectDevice();
+                this->SetEchoNumberParameter();
+                this->SetRawDataType();
+                this->SetScanMode();
+                this->SetPlayback();
+                this->SetViewParameter();
+                this->Play();
+            }
+        });
+
+    }
+    void Stop()
+    {
+        if(m_set_thread.joinable())
+        {
+            m_running=false;
+            m_set_thread.join();
+        }
+    }
+
 };
 
 LidarRosDriver::LidarRosDriver(ros::NodeHandle node)
@@ -91,6 +372,11 @@ void LidarRosDriver::Start()
 bool LidarRosDriver::IsRunning() const
 {
     return m_impl->m_running;
+}
+
+void LidarRosDriver::Stop()
+{
+    m_impl->Stop();
 }
 
 }}  // namespace onet::lidar_ros
