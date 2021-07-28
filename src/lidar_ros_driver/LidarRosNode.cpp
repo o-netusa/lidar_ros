@@ -15,7 +15,7 @@ int main(int argc, char** argv)
     ros::init(argc, argv, "onet_lidar_node");
     ros::NodeHandle node;
     onet::lidar_ros::LidarRosDriver dvr(node);
-
+    dvr.Start();
     while (ros::ok())
     {
         // Check running status

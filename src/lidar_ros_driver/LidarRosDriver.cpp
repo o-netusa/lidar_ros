@@ -25,7 +25,7 @@ static auto param_file = (fs::path(cppbase::filesystem::GetConfigDir()) /
 class ViewerCallback  :public onet::lidar::DeviceCallback
 {
 public:
-    void SetVisualizer(ros::Publisher* cloud_pub)
+    void SetPublisher(ros::Publisher* cloud_pub)
     {
         m_cloud_pub=cloud_pub;
     }
@@ -90,7 +90,7 @@ struct LidarRosDriver::Impl
     {
         m_cloud_pub=m_node.advertise<sensor_msgs::PointCloud>("cloud",100);
         m_viewcallback=std::make_shared<ViewerCallback>();
-        m_viewcallback->SetVisualizer(&m_cloud_pub);
+        m_viewcallback->SetPublisher(&m_cloud_pub);
         // get parameters
         // e.g.
         // m_node.getParameter()
@@ -114,17 +114,13 @@ struct LidarRosDriver::Impl
     void DisconnectDevice()
     {
         if(!m_lidar_device) return;
-        int Type;
-        if(m_node.getParameter("DisconnectDevice",Type))
+        if(m_lidar_device->Stop())
         {
-            if(m_lidar_device->Stop())
-            {
-                m_lidar_device=nullptr;
-            }
-            else
-            {
-                ROS_INFO("Error:Failed to stop scanning on the LiDAR sensor.");
-            }
+            m_lidar_device=nullptr;
+        }
+        else
+        {
+            ROS_INFO("Error:Failed to stop scanning on the LiDAR sensor.");
         }
     }
 
@@ -133,7 +129,7 @@ struct LidarRosDriver::Impl
         if(m_lidar_device)
         {
             LaserParameter laserparam;
-            if(m_node.getParameter("LaserParameter",laserparam))
+            if(m_node.getParameter("laser_parameter",laserparam))
             {
                 try
                 {
@@ -167,7 +163,7 @@ struct LidarRosDriver::Impl
     {
         if(!m_lidar_device) return;
         int32_t type;
-        if(m_node.getParameter("RawDataType",type))
+        if(m_node.getParameter("raw_data_type",type))
         {
             try
             {
@@ -183,7 +179,7 @@ struct LidarRosDriver::Impl
     {
         if(!m_lidar_device) return;
         ScanMode mode;
-        if(m_node.getParameter("ScanMode",mode))
+        if(m_node.getParameter("can_mode",mode))
         {
             try
             {
@@ -199,7 +195,7 @@ struct LidarRosDriver::Impl
     {
         if(!m_lidar_device) return;
         ViewParameter viewparam;
-        if(m_node.getParameter("ViewParameter",viewparam))
+        if(m_node.getParameter("view_parameter",viewparam))
         {
             try
             {
@@ -253,7 +249,7 @@ struct LidarRosDriver::Impl
             case 1: //play
             {
                 lidar::WriteRawDataOption option;
-                if(m_node.getParameter("gatherparameter",option))
+                if(m_node.getParameter("gather_parameter",option))
                 {
                     if(m_playback)
                     {
@@ -330,21 +326,52 @@ struct LidarRosDriver::Impl
             }
         }
     }
+    std::string UpdateParameter()
+    {
+        std::string update_parameter;
+        if(m_node.getParameter("update_parameter",update_parameter))
+        {
+            return update_parameter;
+        }
+        return "";
+    }
 
     void Start()
     {
         m_set_thread=std::thread([this]{
             this->m_running=true;
             while (this->m_running) {
-                this->ConnectDevice();
-                this->SetLaserParameter();
-                this->DisconnectDevice();
-                this->SetEchoNumberParameter();
-                this->SetRawDataType();
-                this->SetScanMode();
-                this->SetPlayback();
-                this->SetViewParameter();
-                this->Play();
+                switch (UpdateParameter())
+                {
+                case "ip":
+                    this->ConnectDevice();
+                    break;
+                case "laser_parameter":
+                    this->SetLaserParameter();
+                    break;
+                case "echo_number":
+                    this->SetEchoNumberParameter();
+                    break;
+                case "raw_data_type":
+                    this->SetRawDataType();
+                    break;
+                case "scan_mode":
+                    this->SetScanMode();
+                    break;
+                case "playback":
+                    this->SetPlayback();
+                    break;
+                case "view_parameter":
+                    this->SetViewParameter();
+                    break;
+                case "disconnect_device":
+                    this->DisconnectDevice();
+                    break;
+                case "play":
+                    this->Play();
+                    break;
+                }
+
             }
         });
 
