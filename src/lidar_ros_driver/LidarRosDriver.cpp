@@ -93,7 +93,7 @@ struct LidarRosDriver::Impl
     Impl(ros::NodeHandle node) : m_node(node)
     {
         m_cloud_pub=m_node.advertise<sensor_msgs::PointCloud>("cloud",100);
-        m_viewcallback=std::make_shared<ViewerCallback>();
+        //m_viewcallback=std::make_shared<ViewerCallback>();
         m_viewcallback->SetPublisher(&m_cloud_pub);
         onet::lidar::config::Deserialize(m_dev_param, param_file);
         // get parameters
@@ -184,7 +184,7 @@ struct LidarRosDriver::Impl
     {
         if(!m_lidar_device) return;
         ScanMode mode;
-        if(m_node.getParam("can_mode",mode))
+        if(m_node.getParam("scan_mode",mode))
         {
             try
             {
