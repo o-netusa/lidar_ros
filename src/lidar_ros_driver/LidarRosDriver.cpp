@@ -13,9 +13,11 @@
 #include <DeviceManager.h>
 #include <LidarDevice.h>
 #include <PlaybackDevice.h>
+#include <DolphinDevice.h>
 #include <Types.h>
 #include <sensor_msgs/PointCloud.h>
 #include <std_msgs/String.h>
+#include <ros/ros.h>
 
 namespace onet { namespace lidar_ros {
 
@@ -82,15 +84,18 @@ struct LidarRosDriver::Impl
     ros::NodeHandle m_node;      //节点
     ros::Publisher m_cloud_pub;  //点云发布者
 
-    std::shared_ptr<ViewerCallback> m_viewcallback;
+    std::shared_ptr<ViewerCallback> m_viewcallback{nullptr};
     lidar::LidarDevice *m_lidar_device{nullptr};
     lidar::PlaybackDevice *m_playback_device{nullptr};
+    std::shared_ptr<onet::lidar::DlphDeviceParameter> m_dev_param;
+
 
     Impl(ros::NodeHandle node) : m_node(node)
     {
         m_cloud_pub=m_node.advertise<sensor_msgs::PointCloud>("cloud",100);
         m_viewcallback=std::make_shared<ViewerCallback>();
         m_viewcallback->SetPublisher(&m_cloud_pub);
+        onet::lidar::config::Deserialize(m_dev_param, param_file);
         // get parameters
         // e.g.
         // m_node.getParameter()
@@ -99,12 +104,12 @@ struct LidarRosDriver::Impl
     void ConnectDevice()
     {
         std::string ip;
-        if(!m_node.getParameter("ip",ip))
+        if(!m_node.getParam("ip",ip))
         {
             return;
         }
         int port;
-        if(!m_node.getParameter("port",port))
+        if(!m_node.getParam("port",port))
         {
             return;
         }
@@ -129,7 +134,7 @@ struct LidarRosDriver::Impl
         if(m_lidar_device)
         {
             LaserParameter laserparam;
-            if(m_node.getParameter("laser_parameter",laserparam))
+            if(m_node.getParam("laser_parameter",laserparam))
             {
                 try
                 {
@@ -146,7 +151,7 @@ struct LidarRosDriver::Impl
     {
         if(!m_lidar_device) return;
         int32_t echo_number;
-         if(m_node.getParameter("echo_number",echo_number))
+         if(m_node.getParam("echo_number",echo_number))
          {
              try
              {
@@ -163,11 +168,11 @@ struct LidarRosDriver::Impl
     {
         if(!m_lidar_device) return;
         int32_t type;
-        if(m_node.getParameter("raw_data_type",type))
+        if(m_node.getParam("raw_data_type",type))
         {
             try
             {
-                m_lidar_device->SetRawDataType(static_cast<onet::lidar::RawDataType>(type));
+                m_lidar_device->SetRawDataType((RawDataType)type);
             }
             catch (std::exception &e)
             {
@@ -179,7 +184,7 @@ struct LidarRosDriver::Impl
     {
         if(!m_lidar_device) return;
         ScanMode mode;
-        if(m_node.getParameter("can_mode",mode))
+        if(m_node.getParam("can_mode",mode))
         {
             try
             {
@@ -195,7 +200,7 @@ struct LidarRosDriver::Impl
     {
         if(!m_lidar_device) return;
         ViewParameter viewparam;
-        if(m_node.getParameter("view_parameter",viewparam))
+        if(m_node.getParam("view_parameter",viewparam))
         {
             try
             {
@@ -213,26 +218,23 @@ struct LidarRosDriver::Impl
         if(m_playback_device && m_playback_device->IsStarted())
             return;
         std::vector<std::string> files;
-        m_node.getParameter("playback",files);
+        m_node.getParam("playback",files);
         if(files.size())
         {
             m_playback_device=GetPlaybackDevice(files);
             if(m_playback_device)
             {
                 m_viewcallback->DisconnectAll();
-                std::shared_ptr<onet::lidar::DlphDeviceParameter> dev_param;
-                onet::lidar::config::Deserialize(dev_param, param_file);
-
-                m_playback_device->SetParameter(dev_param);
+                m_playback_device->SetParameter(m_dev_param);
                 m_playback_device->Init();
 
-                m_viewcallback->per_frame_signal.connect([&](uint32_t,std::shared_ptr<open3d::geometry::PointCloud>,const std::string &file_name) \
-                {
+                m_viewcallback->per_frame_signal.connect([&](uint32_t,std::shared_ptr<open3d::geometry::PointCloud>,const std::string &file_name){
                     //文件回放，文件列表滚动
                 });
                 m_viewcallback->play_done_signal.connect([&]() {
                     if(m_playback_device && !m_playback_device->IsStarted())
                     {
+                        //文件回放，播放状态
 
                     }
                 });
@@ -242,20 +244,22 @@ struct LidarRosDriver::Impl
     void Play()
     {
         int type;
-        if(m_node.getParameter("play",type))
+        if(m_node.getParam("play",type))
         {
             switch (type)
             {
             case 1: //play
             {
                 lidar::WriteRawDataOption option;
-                if(m_node.getParameter("gather_parameter",option))
+                //m_node.getParam("gather_parameter",option)
+                int type1;
+                if(m_node.getParam("gather_parameter",type1))
                 {
                     if(m_playback)
                     {
                        if(m_playback_device)
                        {
-                           if(!m_playback_device->Start(m_viewcallback,option))
+                           if(m_playback_device->Start(m_viewcallback,option))
                            {
                                ROS_INFO("Error:Playback failed.");
                            }
@@ -326,52 +330,58 @@ struct LidarRosDriver::Impl
             }
         }
     }
-    std::string UpdateParameter()
+    void UpdateParameter()
     {
         std::string update_parameter;
-        if(m_node.getParameter("update_parameter",update_parameter))
+        if(m_node.getParam("update_parameter",update_parameter))
         {
-            return update_parameter;
+            if(update_parameter=="ip")
+            {
+                this->ConnectDevice();
+            }
+            else if(update_parameter=="laser_parameter")
+            {
+                this->SetLaserParameter();
+            }
+            else if(update_parameter=="echo_number")
+            {
+                this->SetEchoNumberParameter();
+            }
+            else if(update_parameter=="raw_data_type")
+            {
+                this->SetRawDataType();
+            }
+            else if(update_parameter=="scan_mode")
+            {
+                this->SetScanMode();
+            }
+            else if(update_parameter=="playback")
+            {
+                this->SetPlayback();
+            }
+            else if(update_parameter=="view_parameter")
+            {
+                this->SetViewParameter();
+            }
+            else if(update_parameter=="disconnect_device")
+            {
+                this->DisconnectDevice();
+            }
+            else if(update_parameter=="play")
+            {
+                this->Play();
+            }
         }
-        return "";
     }
 
     void Start()
     {
         m_set_thread=std::thread([this]{
             this->m_running=true;
+            ros::Rate loop_rate(20);
             while (this->m_running) {
-                switch (UpdateParameter())
-                {
-                case "ip":
-                    this->ConnectDevice();
-                    break;
-                case "laser_parameter":
-                    this->SetLaserParameter();
-                    break;
-                case "echo_number":
-                    this->SetEchoNumberParameter();
-                    break;
-                case "raw_data_type":
-                    this->SetRawDataType();
-                    break;
-                case "scan_mode":
-                    this->SetScanMode();
-                    break;
-                case "playback":
-                    this->SetPlayback();
-                    break;
-                case "view_parameter":
-                    this->SetViewParameter();
-                    break;
-                case "disconnect_device":
-                    this->DisconnectDevice();
-                    break;
-                case "play":
-                    this->Play();
-                    break;
-                }
-
+                this->UpdateParameter();
+                loop_rate.sleep();
             }
         });
 
