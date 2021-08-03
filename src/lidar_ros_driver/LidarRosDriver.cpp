@@ -44,7 +44,18 @@ public:
         pointcloud.header.stamp=ros::Time::now();
         pointcloud.header.frame_id="sensor_frame";
         pointcloud.points.resize(cloud->size());
-        //pointcloud.points=cloud;
+        pointcloud.channels.resize(2);
+        pointcloud.channels[0].name="intensities";
+        pointcloud.channels[0].values.resize(cloud->size());
+        pointcloud.channels[1].name="rgb";
+        pointcloud.channels[1].values.resize(cloud->size());
+        for (size_t i = 0; i < cloud->size(); i++)
+        {
+            const auto &pt = cloud->at(i);
+            pointcloud.points[i].x = pt[0];
+            pointcloud.points[i].y = pt[1];
+            pointcloud.points[i].z = pt[2];
+        }
         m_cloud_pub->publish(pointcloud);
     }
     void PlaybackDone() {}
@@ -104,17 +115,21 @@ struct LidarRosDriver::Impl
     }
     void ConnectDevice()
     {
-        std::string ip;
-        if(!m_node.getParam("ip",ip))
+        try
         {
+            XmlRpc::XmlRpcValue connect_xml;
+            if(m_node.getParam("connect",connect_xml))
+            {
+                std::string ip=connect_xml["ip"];
+                int port=connect_xml["port"];
+                m_lidar_device=GetLidarDevice(ip,port);
+            }
+        }
+        catch (ros::Exception &e)
+        {
+            ROS_ERROR("Error:%s",e.what());
             return;
         }
-        int port;
-        if(!m_node.getParam("port",port))
-        {
-            return;
-        }
-        m_lidar_device=GetLidarDevice(ip,port);
     }
 
     void DisconnectDevice()
@@ -132,43 +147,30 @@ struct LidarRosDriver::Impl
 
     void SetLaserParameter()
     {
-        if(!m_lidar_device) return;
-        XmlRpc::XmlRpcValue laserparam_xml;
-        if(m_node.getParam("laser_parameter",laserparam_xml) && laserparam_xml.getType()==XmlRpc::XmlRpcValue::TypeStruct)
+        LaserParameter laserparam;
+        try
         {
-            LaserParameter laserparam;
-            if(laserparam_xml.hasMember("level") && laserparam_xml["level"].getType()==XmlRpc::XmlRpcValue::TypeInt)
+            XmlRpc::XmlRpcValue laserparam_xml;
+            if(m_node.getParam("laser_parameter",laserparam_xml))
             {
                 laserparam.level=static_cast<int>(laserparam_xml["level"]);
-            }
-            else
-            {
-                return;
-            }
-            if(laserparam_xml.hasMember("factor") && laserparam_xml["factor"].getType()==XmlRpc::XmlRpcValue::TypeInt)
-            {
                 laserparam.level=static_cast<int>(laserparam_xml["factor"]);
-            }
-            else
-            {
-                return;
-            }
-            if(laserparam_xml.hasMember("pulse_width") && laserparam_xml["pulse_width"].getType()==XmlRpc::XmlRpcValue::TypeInt)
-            {
                 laserparam.level=static_cast<int>(laserparam_xml["pulse_width"]);
             }
-            else
-            {
-                return;
-            }
-            try
-            {
-                m_lidar_device->SetLaser(laserparam);
-            }
-            catch (std::exception &e)
-            {
-                ROS_INFO("Error:%s",e.what());
-            }
+        }
+        catch (ros::Exception &e)
+        {
+            ROS_ERROR("Error:%s",e.what());
+            return;
+        }
+
+        try
+        {
+            m_lidar_device->SetLaser(laserparam);
+        }
+        catch (std::exception &e)
+        {
+            ROS_INFO("Error:%s",e.what());
         }
     }
     void SetEchoNumberParameter()
@@ -190,113 +192,66 @@ struct LidarRosDriver::Impl
 
     void SetRawDataType()
     {
-        if(!m_lidar_device) return;
-        int32_t type;
-        if(m_node.getParam("raw_data_type",type))
+        try
         {
-            try
+            int32_t type;
+            if(m_node.getParam("raw_data_type",type))
             {
                 m_lidar_device->SetRawDataType((RawDataType)type);
             }
-            catch (std::exception &e)
-            {
-                ROS_INFO("Error:%s",e.what());
-            }
+        }
+        catch (std::exception &e)
+        {
+            ROS_INFO("Error:%s",e.what());
         }
     }
     void SetScanMode()
     {
-        if(!m_lidar_device) return;
-        int mode;
-        if(m_node.getParam("scan_mode",mode))
+        try
         {
-            try
+            int mode;
+            if(m_node.getParam("scan_mode",mode))
             {
-                m_lidar_device->SetScanMode((ScanMode)mode);
+               m_lidar_device->SetScanMode((ScanMode)mode);
             }
-            catch (std::exception &e)
-            {
-               ROS_INFO("Error:%s",e.what());
-            }
+        }
+        catch (std::exception &e)
+        {
+           ROS_INFO("Error:%s",e.what());
         }
     }
     void SetViewParameter()
     {
-        if(!m_lidar_device) return;
-        XmlRpc::XmlRpcValue viewparam_xml;
-        if(m_node.getParam("view_parameter",viewparam_xml) && viewparam_xml.getType()==XmlRpc::XmlRpcValue::TypeStruct)
+        ViewParameter viewparam;
+        try
         {
-            ViewParameter viewparam;
-            if(viewparam_xml.hasMember("frame") && viewparam_xml["frame"].getType()==XmlRpc::XmlRpcValue::TypeInt)
+            XmlRpc::XmlRpcValue viewparam_xml;
+            if(m_node.getParam("view_parameter",viewparam_xml) && viewparam_xml.getType()==XmlRpc::XmlRpcValue::TypeStruct)
             {
                 viewparam.frame=static_cast<int>(viewparam_xml["frame"]);
+                viewparam.steps[0]=static_cast<int>(viewparam_xml["steps"][0]);
+                viewparam.steps[1]=static_cast<int>(viewparam_xml["steps"][1]);
+                viewparam.steps[2]=static_cast<int>(viewparam_xml["steps"][2]);
+                viewparam.steps[3]=static_cast<int>(viewparam_xml["steps"][3]);
+                viewparam.perspectives[0]=static_cast<double>(viewparam_xml["perspectives"][0]);
+                viewparam.perspectives[1]=static_cast<double>(viewparam_xml["perspectives"][1]);
+                viewparam.perspectives[2]=static_cast<double>(viewparam_xml["perspectives"][2]);
+                viewparam.perspectives[3]=static_cast<double>(viewparam_xml["perspectives"][3]);
+                viewparam.perspectives[4]=static_cast<double>(viewparam_xml["perspectives"][4]);
             }
-            else
-            {
-                return;
-            }
-            if(viewparam_xml.hasMember("steps") && viewparam_xml["steps"].getType()==XmlRpc::XmlRpcValue::TypeArray && viewparam_xml["steps"].size()==4)
-            {
-                if(viewparam_xml["steps"][0].getType()==XmlRpc::XmlRpcValue::TypeInt)
-                {
-                    viewparam.steps[0]=static_cast<int>(viewparam_xml["steps"][0]);
-                }
-                if(viewparam_xml["steps"][1].getType()==XmlRpc::XmlRpcValue::TypeInt)
-                {
-                    viewparam.steps[1]=static_cast<int>(viewparam_xml["steps"][1]);
-                }
-                if(viewparam_xml["steps"][2].getType()==XmlRpc::XmlRpcValue::TypeInt)
-                {
-                    viewparam.steps[2]=static_cast<int>(viewparam_xml["steps"][2]);
-                }
-                if(viewparam_xml["steps"][3].getType()==XmlRpc::XmlRpcValue::TypeInt)
-                {
-                    viewparam.steps[3]=static_cast<int>(viewparam_xml["steps"][3]);
-                }
-            }
-            else
-            {
-                return;
-            }
-            if(viewparam_xml.hasMember("perspectives") && viewparam_xml["perspectives"].getType()==XmlRpc::XmlRpcValue::TypeArray && viewparam_xml["perspectives"].size()==5)
-            {
-                if(viewparam_xml["perspectives"][0].getType()==XmlRpc::XmlRpcValue::TypeDouble)
-                {
-                    viewparam.perspectives[0]=static_cast<double>(viewparam_xml["perspectives"][0]);
-                }
-
-                if(viewparam_xml["perspectives"][1].getType()==XmlRpc::XmlRpcValue::TypeDouble)
-                {
-                    viewparam.perspectives[1]=static_cast<double>(viewparam_xml["perspectives"][1]);
-                }
-
-                if(viewparam_xml["perspectives"][0].getType()==XmlRpc::XmlRpcValue::TypeDouble)
-                {
-                    viewparam.perspectives[2]=static_cast<double>(viewparam_xml["perspectives"][2]);
-                }
-
-                if(viewparam_xml["perspectives"][3].getType()==XmlRpc::XmlRpcValue::TypeDouble)
-                {
-                    viewparam.perspectives[3]=static_cast<double>(viewparam_xml["perspectives"][3]);
-                }
-
-                if(viewparam_xml["perspectives"][4].getType()==XmlRpc::XmlRpcValue::TypeDouble)
-                {
-                    viewparam.perspectives[4]=static_cast<double>(viewparam_xml["perspectives"][4]);
-                }
-            }
-            else
-            {
-                return;
-            }
-            try
-            {
-                m_lidar_device->SetViewSpeed(viewparam);
-            }
-            catch (std::exception &e)
-            {
-                ROS_INFO("Error:%s",e.what());
-            }
+        }
+        catch (ros::Exception &e)
+        {
+            ROS_INFO("Error:%s",e.what());
+            return;
+        }
+        try
+        {
+            m_lidar_device->SetViewSpeed(viewparam);
+        }
+        catch (std::exception &e)
+        {
+            ROS_INFO("Error:%s",e.what());
         }
     }
 
@@ -314,7 +269,7 @@ struct LidarRosDriver::Impl
                 m_viewcallback->DisconnectAll();
                 m_playback_device->SetParameter(m_dev_param);
                 m_playback_device->Init();
-
+                m_playback=true;
                 m_viewcallback->per_frame_signal.connect([&](uint32_t,std::shared_ptr<onet::lidar::PointCloud>,const std::string &file_name){
                     //文件回放，文件列表滚动
                 });
@@ -337,11 +292,13 @@ struct LidarRosDriver::Impl
             {
             case 1: //play
             {
-                lidar::WriteRawDataOption option;
-                //m_node.getParam("gather_parameter",option)
-                int type1;
-                if(m_node.getParam("gather_parameter",type1))
+                XmlRpc::XmlRpcValue option_xml;
+                if(m_node.getParam("gather_parameter",option_xml))
                 {
+                    bool saveable=option_xml["savable"];
+                    int rule=option_xml["FolderRule"];
+                    std::string path=option_xml["path"];
+                    lidar::WriteRawDataOption option(saveable,(lidar::WriteRawDataOption::FolderRule)rule,path);
                     if(m_playback)
                     {
                        if(m_playback_device)
@@ -422,7 +379,7 @@ struct LidarRosDriver::Impl
         std::string update_parameter;
         if(m_node.getParam("update_parameter",update_parameter))
         {
-            if(update_parameter=="ip")
+            if(update_parameter=="connect")
             {
                 this->ConnectDevice();
             }
