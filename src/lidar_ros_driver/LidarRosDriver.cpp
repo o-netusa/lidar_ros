@@ -105,7 +105,7 @@ struct LidarRosDriver::Impl
     Impl(ros::NodeHandle node) : m_node(node)
     {
         m_cloud_pub=m_node.advertise<sensor_msgs::PointCloud>("cloud",100);
-        //m_viewcallback=std::make_shared<ViewerCallback>();
+        m_viewcallback=std::make_shared<ViewerCallback>();
         m_viewcallback->SetPublisher(&m_cloud_pub);
         onet::lidar::config::Deserialize(m_dev_param, param_file);
         // get parameters
@@ -154,8 +154,8 @@ struct LidarRosDriver::Impl
             if(m_node.getParam("laser_parameter",laserparam_xml))
             {
                 laserparam.level=static_cast<int>(laserparam_xml["level"]);
-                laserparam.level=static_cast<int>(laserparam_xml["factor"]);
-                laserparam.level=static_cast<int>(laserparam_xml["pulse_width"]);
+                laserparam.factor=static_cast<int>(laserparam_xml["factor"]);
+                laserparam.pulse_width=static_cast<int>(laserparam_xml["pulse_width"]);
             }
         }
         catch (ros::Exception &e)
