@@ -62,10 +62,10 @@ public:
 
     ros::Publisher* m_cloud_pub{nullptr};
 };
+static uuids::uuid play_device_id = uuids::uuid();
 
 onet::lidar::PlaybackDevice *GetPlaybackDevice(const std::vector<std::string> &file_list)
 {
-    static uuids::uuid play_device_id = uuids::uuid();
     if (!play_device_id.is_nil())
     {
         onet::lidar::DeviceManager::GetInstance().RemoveDevice(play_device_id);
@@ -76,11 +76,12 @@ onet::lidar::PlaybackDevice *GetPlaybackDevice(const std::vector<std::string> &f
         lidar::DeviceManager::GetInstance().GetDevice(play_device_id));
 }
 
+static uuids::uuid lidar_device_id = uuids::uuid();
 onet::lidar::LidarDevice *GetLidarDevice(const std::string &strIP, int port)
-{
-    static uuids::uuid lidar_device_id = uuids::uuid();
+{    
     if (lidar_device_id.is_nil())
     {
+    	ROS_INFO("lidar_device_id.is_nil()");
         onet::lidar::DeviceManager::GetInstance().RemoveDevice(lidar_device_id);
         lidar_device_id = uuids::uuid();
     }
@@ -107,34 +108,40 @@ struct LidarRosDriver::Impl
         m_cloud_pub=m_node.advertise<sensor_msgs::PointCloud>("cloud",100);
         m_viewcallback=std::make_shared<ViewerCallback>();
         m_viewcallback->SetPublisher(&m_cloud_pub);
+        ROS_INFO("file path:%s\n",param_file.c_str());
         onet::lidar::config::Deserialize(m_dev_param, param_file);
         // get parameters
         // e.g.
         // m_node.getParameter()
         // ...
     }
-    void ConnectDevice()
+    bool ConnectDevice()
     {
+        bool state=false;
         try
         {
             XmlRpc::XmlRpcValue connect_xml;
             if(m_node.getParam("connect",connect_xml))
             {
-                std::string ip=connect_xml["ip"];
-                int port=connect_xml["port"];
+            	ROS_INFO("ip:%s por=%d\n",static_cast<std::string>(connect_xml["ip"]).c_str(),static_cast<int>(connect_xml["port"]));
+                std::string ip=static_cast<std::string>(connect_xml["ip"]);
+                int port=static_cast<int>(connect_xml["port"]);
                 m_lidar_device=GetLidarDevice(ip,port);
+                state=true;
             }
         }
         catch (ros::Exception &e)
         {
             ROS_ERROR("Error:%s",e.what());
-            return;
+            return state;
         }
+        return state;
     }
 
-    void DisconnectDevice()
+    bool DisconnectDevice()
     {
-        if(!m_lidar_device) return;
+        bool state=true;
+        if(!m_lidar_device) return state;
         if(m_lidar_device->Stop())
         {
             m_lidar_device=nullptr;
@@ -143,10 +150,12 @@ struct LidarRosDriver::Impl
         {
             ROS_INFO("Error:Failed to stop scanning on the LiDAR sensor.");
         }
+        return state;
     }
 
-    void SetLaserParameter()
+    bool SetLaserParameter()
     {
+        bool state=false;
         LaserParameter laserparam;
         try
         {
@@ -156,12 +165,13 @@ struct LidarRosDriver::Impl
                 laserparam.level=static_cast<int>(laserparam_xml["level"]);
                 laserparam.factor=static_cast<int>(laserparam_xml["factor"]);
                 laserparam.pulse_width=static_cast<int>(laserparam_xml["pulse_width"]);
+                bool state=true;
             }
         }
         catch (ros::Exception &e)
         {
             ROS_ERROR("Error:%s",e.what());
-            return;
+            return state;
         }
 
         try
@@ -172,13 +182,15 @@ struct LidarRosDriver::Impl
         {
             ROS_INFO("Error:%s",e.what());
         }
+        return state;
     }
-    void SetEchoNumberParameter()
+    bool SetEchoNumberParameter()
     {
-        if(!m_lidar_device) return;
+        bool state=false;
         int echo_number;
          if(m_node.getParam("echo_number",echo_number))
          {
+             state=true;
              try
              {
                  m_lidar_device->SetEchoNumber(echo_number);
@@ -188,15 +200,18 @@ struct LidarRosDriver::Impl
                  ROS_INFO("Error:%s",e.what());
              }
          }
+         return state;
     }
 
-    void SetRawDataType()
+    bool SetRawDataType()
     {
+        bool state=false;
         try
         {
             int32_t type;
             if(m_node.getParam("raw_data_type",type))
             {
+                state=true;
                 m_lidar_device->SetRawDataType((RawDataType)type);
             }
         }
@@ -204,14 +219,17 @@ struct LidarRosDriver::Impl
         {
             ROS_INFO("Error:%s",e.what());
         }
+        return state;
     }
-    void SetScanMode()
+    bool SetScanMode()
     {
+        bool state=false;
         try
         {
             int mode;
             if(m_node.getParam("scan_mode",mode))
             {
+               state=true;
                m_lidar_device->SetScanMode((ScanMode)mode);
             }
         }
@@ -219,15 +237,18 @@ struct LidarRosDriver::Impl
         {
            ROS_INFO("Error:%s",e.what());
         }
+        return state;
     }
-    void SetViewParameter()
+    bool SetViewParameter()
     {
+        bool state=false;
         ViewParameter viewparam;
         try
         {
             XmlRpc::XmlRpcValue viewparam_xml;
             if(m_node.getParam("view_parameter",viewparam_xml) && viewparam_xml.getType()==XmlRpc::XmlRpcValue::TypeStruct)
             {
+                state=true;
                 viewparam.frame=static_cast<int>(viewparam_xml["frame"]);
                 viewparam.steps[0]=static_cast<int>(viewparam_xml["steps"][0]);
                 viewparam.steps[1]=static_cast<int>(viewparam_xml["steps"][1]);
@@ -243,7 +264,7 @@ struct LidarRosDriver::Impl
         catch (ros::Exception &e)
         {
             ROS_INFO("Error:%s",e.what());
-            return;
+            return state;
         }
         try
         {
@@ -253,16 +274,19 @@ struct LidarRosDriver::Impl
         {
             ROS_INFO("Error:%s",e.what());
         }
+        return state;
     }
 
-    void SetPlayback()
+    bool SetPlayback()
     {
+        bool state=false;
         if(m_playback_device && m_playback_device->IsStarted())
-            return;
+            return state;
         std::vector<std::string> files;
         m_node.getParam("playback",files);
         if(files.size())
         {
+            state=true;
             m_playback_device=GetPlaybackDevice(files);
             if(m_playback_device)
             {
@@ -282,12 +306,15 @@ struct LidarRosDriver::Impl
                 });
             }
         }
+        return state;
     }
-    void Play()
+    bool Play()
     {
+        bool state=false;
         int type;
         if(m_node.getParam("play",type))
         {
+            state=true;
             switch (type)
             {
             case 1: //play
@@ -295,9 +322,9 @@ struct LidarRosDriver::Impl
                 XmlRpc::XmlRpcValue option_xml;
                 if(m_node.getParam("gather_parameter",option_xml))
                 {
-                    bool saveable=option_xml["savable"];
-                    int rule=option_xml["FolderRule"];
-                    std::string path=option_xml["path"];
+                    bool saveable=static_cast<bool>(option_xml["savable"]);
+                    int rule=static_cast<int>(option_xml["FolderRule"]);
+                    std::string path=static_cast<std::string>(option_xml["path"]);
                     lidar::WriteRawDataOption option(saveable,(lidar::WriteRawDataOption::FolderRule)rule,path);
                     if(m_playback)
                     {
@@ -373,47 +400,57 @@ struct LidarRosDriver::Impl
 
             }
         }
+        return state;
     }
     void UpdateParameter()
     {
         std::string update_parameter;
-        if(m_node.getParam("update_parameter",update_parameter))
+
+        if(m_node.getParam("update_device_parameter",update_parameter))
         {
+            ROS_INFO("update_parameter:%s\n",update_parameter.c_str());
+            bool state=false;
             if(update_parameter=="connect")
             {
-                this->ConnectDevice();
+                state=this->ConnectDevice();
             }
             else if(update_parameter=="laser_parameter")
             {
-                this->SetLaserParameter();
+                state=this->SetLaserParameter();
             }
             else if(update_parameter=="echo_number")
             {
-                this->SetEchoNumberParameter();
+                state=this->SetEchoNumberParameter();
             }
             else if(update_parameter=="raw_data_type")
             {
-                this->SetRawDataType();
+                state=this->SetRawDataType();
             }
             else if(update_parameter=="scan_mode")
             {
-                this->SetScanMode();
+                state=this->SetScanMode();
             }
             else if(update_parameter=="playback")
             {
-                this->SetPlayback();
+                state=this->SetPlayback();
             }
             else if(update_parameter=="view_parameter")
             {
-                this->SetViewParameter();
+                state=this->SetViewParameter();
             }
             else if(update_parameter=="disconnect_device")
             {
-                this->DisconnectDevice();
+                state=this->DisconnectDevice();
             }
             else if(update_parameter=="play")
             {
-                this->Play();
+                state=this->Play();
+            }
+            if(state)
+            {
+            	ROS_INFO("delete parameter");
+                m_node.deleteParam("update_device_parameter");
+                m_node.deleteParam(update_parameter);
             }
         }
     }
@@ -422,7 +459,7 @@ struct LidarRosDriver::Impl
     {
         m_set_thread=std::thread([this]{
             this->m_running=true;
-            ros::Rate loop_rate(20);
+            ros::Rate loop_rate(5);
             while (this->m_running) {
                 this->UpdateParameter();
                 loop_rate.sleep();

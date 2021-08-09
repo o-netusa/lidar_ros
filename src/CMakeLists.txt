@@ -26,7 +26,14 @@ download_project(
 )
 add_subdirectory(${cppbase_SOURCE_DIR} ${cppbase_BINARY_DIR})
 set(CPPBASE_INCLUDE_DIR ${cppbase_SOURCE_DIR} CACHE STRING "")
+message(STATUS "cppbase path====${CPPBASE_INCLUDE_DIR}")
+message(STATUS "cppbase output path====${cppbase_BINARY_DIR}")
 
+#if(GLIBCXX_USE_CXX11_ABI)
+  add_compile_definitions(_GLIBCXX_USE_CXX11_ABI=1)
+#else()
+#  add_compile_definitions(_GLIBCXX_USE_CXX11_ABI=0)
+#endif()
 set(USE_OPEN3D OFF)
 download_project(
   PROJ           lidardevice
@@ -34,6 +41,11 @@ download_project(
   GIT_TAG        master
 )
 add_subdirectory(${lidardevice_SOURCE_DIR} ${lidardevice_BINARY_DIR})
+
+#set(lidardevice_INCLUDE_DIR ${lidardevice_SOURCE_DIR}/src)
+#set(lidardevice_LIBRARIES ${lidardevice_BINARY_DIR}/../lib)
+
+#link_directories(${lidardevice_LIBRARIES})
 
 ###################################
 ## catkin specific configuration ##
@@ -44,21 +56,19 @@ catkin_package(
 #  DEPENDS
 )
 
+
 ###########
 ## Build ##
 ###########
 include_directories(
   ${catkin_INCLUDE_DIRS}
-  ${lidardevice_SOURCE_DIR/src}
+  ${CPPBASE_INCLUDE_DIR}
+  ${lidardevice_INCLUDE_DIR}
 )
 
-add_library(${PROJECT_NAME}
-  ${PROJECT_NAME}/LidarRosDriver.cpp
-  ${PROJECT_NAME}/LidarRosNode.cpp
-)
+add_subdirectory(lidar_ros_driver)
+add_subdirectory(demo_test)
 
-target_compile_features(${PROJECT_NAME} PRIVATE ${CXX_STD})
-target_link_libraries(${PROJECT_NAME} LidarDevice)
 
 #############
 ## Install ##
@@ -67,3 +77,22 @@ target_link_libraries(${PROJECT_NAME} LidarDevice)
 #############
 ## Testing ##
 #############
+
+#add_executable(lidar_ros_test ${lidar_ros_test_src})
+
+## Add gtest based cpp test target and link libraries
+
+include(CTest)
+include(GoogleTest)
+#
+find_package(rostest REQUIRED)
+catkin_add_gtest(lidar_ros_test tests/test.cpp)
+target_link_libraries(lidar_ros_test ${catkin_LIBRARIES})
+
+#set(lidar_ros_test_src
+#    lidar_ros_test/test.cpp
+#    lidar_ros_test/DriverTest.cpp
+#    )
+#add_executable(lidar_ros_test ${lidar_ros_test_src})
+##
+#target_link_libraries(lidar_ros_test gtest lidar_ros_driver)
