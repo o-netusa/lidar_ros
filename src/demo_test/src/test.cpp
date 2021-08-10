@@ -9,14 +9,15 @@
 static std::string title =
     "\n*********************************\n"
     "**  a.CreateDevice(Lidar only)  \n"
-    "**  b.SetLaser                  \n"
-    "**  c.SetEchoNumber             \n"
-    "**  d.SetRawDataType            \n"
-    "**  e.SetScanMode               \n"
-    "**  f.SetPlayback               \n"
-    "**  g.SetViewSpeed              \n"
-    "**  h.SetDisconnect             \n"
-    "**  i.Set Play state            \n"
+    "**  b.InitDevice                \n"
+    "**  c.SetLaser                  \n"
+    "**  d.SetEchoNumber             \n"
+    "**  e.SetRawDataType            \n"
+    "**  f.SetScanMode               \n"
+    "**  g.SetPlayback               \n"
+    "**  h.SetViewSpeed              \n"
+    "**  i.SetDisconnect             \n"
+    "**  j.Set Play state            \n"
     "** ****press q to quit********* **";
 
 void PointCloudCallback(const sensor_msgs::PointCloud::ConstPtr &msg)
@@ -24,11 +25,25 @@ void PointCloudCallback(const sensor_msgs::PointCloud::ConstPtr &msg)
     ROS_INFO("PointCloud Size:%d\n",msg->points.size());
 }
 
+void ClearParameter(ros::NodeHandle &m_node)
+    {
+       if(m_node.hasParam("update_device_parameter"))
+       {
+          std::string update_parameter;
+          if(m_node.getParam("update_device_parameter",update_parameter))
+          {
+              m_node.deleteParam(update_parameter);
+	   }
+       	  m_node.deleteParam("update_device_parameter");
+       }
+    }
+
 int main(int argc, char *argv[])
 {
     ros::init(argc,argv,"test_node");
     ros::NodeHandle node;
     ros::Subscriber cloud_sub=node.subscribe("cloud",100,PointCloudCallback);
+    ClearParameter(node);
     ros::Rate loop_rate(1);
     std::atomic_bool flag_loop{true};
     auto op_future = std::async(std::launch::async, [&] {
@@ -55,6 +70,19 @@ int main(int argc, char *argv[])
                 break;
             case 'b':
             {
+                node.setParam("update_device_parameter","connect");
+                std::cout << "Enter ip-address port: ";
+                std::string ip;
+                int port;
+                std::cin >> ip >> port;
+                XmlRpc::XmlRpcValue connect_xml;
+                connect_xml["ip"]=ip;
+                connect_xml["port"]=port;
+                node.setParam("connect",connect_xml);
+            }
+                break;
+            case 'c':
+            {
                 node.setParam("update_device_parameter","laser_parameter");
                 int level,factor,pulse_width;
                 std::cout << "Enter level[0-19] factor[4-10] pulse_width[0-15]: ";
@@ -66,7 +94,7 @@ int main(int argc, char *argv[])
                 node.setParam("laser_parameter",Laser_xml);
             }
                 break;
-            case 'c':
+            case 'd':
             {
                 node.setParam("update_device_parameter","echo_number");
                 std::cout << "Enter echo[1-4]: ";
@@ -75,7 +103,7 @@ int main(int argc, char *argv[])
                 node.setParam("echo_number",echo);
             }
                 break;
-            case 'd':
+            case 'e':
             {
                 node.setParam("update_device_parameter","raw_data_type");
                 std::cout << "Enter raw-data-type[0-1(0 means FPGA, 1 means DSP)]: ";
@@ -84,7 +112,7 @@ int main(int argc, char *argv[])
                 node.setParam("raw_data_type",type);
             }
                 break;
-            case 'e':
+            case 'f':
             {
                 node.setParam("update_device_parameter","scan_mode");
                 std::cout << "Enter scan-mode[0,1](0 means TWO-WAY, 1 means ONE-WAY): ";
@@ -93,7 +121,7 @@ int main(int argc, char *argv[])
                 node.setParam("scan_mode",mode);
             }
                 break;
-            case 'f':
+            case 'g':
             {
                 node.setParam("update_device_parameter","playback");
                 std::cout << "Enter playback file: ";
@@ -104,7 +132,7 @@ int main(int argc, char *argv[])
                 node.setParam("playback",file_list);
             }
                 break;
-            case 'g':
+            case 'h':
             {
                 node.setParam("update_device_parameter","view_parameter");
                 int frame;
@@ -135,12 +163,12 @@ int main(int argc, char *argv[])
 
             }
                 break;
-            case 'h':
+            case 'i':
             {
                 node.setParam("update_device_parameter","disconnect_device");
             }
                 break;
-            case 'i':
+            case 'j':
             {
                 node.setParam("update_device_parameter","play");
                 std::cout << "Enter 1=play 2=pause 0=stop : ";
@@ -156,6 +184,7 @@ int main(int argc, char *argv[])
 
         }
     });
+    
     while (flag_loop)
     {
         if(ros::ok()==false)
@@ -163,6 +192,21 @@ int main(int argc, char *argv[])
             flag_loop=false;
             break;
         }
+        /*std::string update_param;
+        if(node.getParam("update_device_parameter",update_param) && update_param.empty()==false && update_param=="view_parameter")
+        {
+            XmlRpc::XmlRpcValue viewparam_xml;
+            if(node.getParam("view_parameter",viewparam_xml) && viewparam_xml.getType()==XmlRpc::XmlRpcValue::TypeStruct)
+            {
+               ROS_INFO("xml=%s.",viewparam_xml.toXml().c_str());
+               ROS_INFO("frame:%d steps:{%d,%d,%d,%d} perspectives:{%f,%f,%f,%f,%f}",static_cast<int>(viewparam_xml["frame"]),
+               static_cast<int>(viewparam_xml["steps"][0]),static_cast<int>(viewparam_xml["steps"][1]),static_cast<int>(viewparam_xml["steps"][2]),
+               static_cast<int>(viewparam_xml["steps"][3]),static_cast<double>(viewparam_xml["perspectives"][0]),static_cast<double>(viewparam_xml["perspectives"][1]),static_cast<double>(viewparam_xml["perspectives"][2]),static_cast<double>(viewparam_xml["perspectives"][3]),static_cast<double>(viewparam_xml["perspectives"][4]));
+               node.deleteParam("view_parameter");
+               node.deleteParam("update_device_parameter");
+               
+	    }
+        }*/
         ros::spinOnce();
         loop_rate.sleep();
     }
