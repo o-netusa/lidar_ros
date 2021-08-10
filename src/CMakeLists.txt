@@ -57,7 +57,7 @@ include_directories(
 )
 
 add_subdirectory(lidar_ros_driver)
-add_subdirectory(demo_test)
+add_subdirectory(test_node)
 add_subdirectory(tests)
 
 
@@ -69,14 +69,4 @@ add_subdirectory(tests)
 ## Testing ##
 #############
 
-#add_executable(lidar_ros_test ${lidar_ros_test_src})
-
-## Add gtest based cpp test target and link libraries
-
-#include(CTest)
-#include(GoogleTest)
-#
-#find_package(rostest REQUIRED)
-#catkin_add_gtest(lidar_ros_test tests/test.cpp)
-#target_link_libraries(lidar_ros_test ${catkin_LIBRARIES})
 

@@ -192,21 +192,6 @@ int main(int argc, char *argv[])
             flag_loop=false;
             break;
         }
-        /*std::string update_param;
-        if(node.getParam("update_device_parameter",update_param) && update_param.empty()==false && update_param=="view_parameter")
-        {
-            XmlRpc::XmlRpcValue viewparam_xml;
-            if(node.getParam("view_parameter",viewparam_xml) && viewparam_xml.getType()==XmlRpc::XmlRpcValue::TypeStruct)
-            {
-               ROS_INFO("xml=%s.",viewparam_xml.toXml().c_str());
-               ROS_INFO("frame:%d steps:{%d,%d,%d,%d} perspectives:{%f,%f,%f,%f,%f}",static_cast<int>(viewparam_xml["frame"]),
-               static_cast<int>(viewparam_xml["steps"][0]),static_cast<int>(viewparam_xml["steps"][1]),static_cast<int>(viewparam_xml["steps"][2]),
-               static_cast<int>(viewparam_xml["steps"][3]),static_cast<double>(viewparam_xml["perspectives"][0]),static_cast<double>(viewparam_xml["perspectives"][1]),static_cast<double>(viewparam_xml["perspectives"][2]),static_cast<double>(viewparam_xml["perspectives"][3]),static_cast<double>(viewparam_xml["perspectives"][4]));
-               node.deleteParam("view_parameter");
-               node.deleteParam("update_device_parameter");
-               
-	    }
-        }*/
         ros::spinOnce();
         loop_rate.sleep();
     }
