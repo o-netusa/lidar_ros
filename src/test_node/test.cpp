@@ -70,15 +70,7 @@ int main(int argc, char *argv[])
                 break;
             case 'b':
             {
-                node.setParam("update_device_parameter","connect");
-                std::cout << "Enter ip-address port: ";
-                std::string ip;
-                int port;
-                std::cin >> ip >> port;
-                XmlRpc::XmlRpcValue connect_xml;
-                connect_xml["ip"]=ip;
-                connect_xml["port"]=port;
-                node.setParam("connect",connect_xml);
+                node.setParam("update_device_parameter","init_device");
             }
                 break;
             case 'c':
