@@ -104,15 +104,11 @@ struct LidarRosDriver::Impl
     std::shared_ptr<onet::lidar::DlphDeviceParameter> m_dev_param;
     Impl(ros::NodeHandle node) : m_node(node)
     {
-        m_cloud_pub=m_node.advertise<sensor_msgs::PointCloud>("cloud",100);
+        m_cloud_pub=m_node.advertise<sensor_msgs::PointCloud>("point_cloud",100);
         m_viewcallback=std::make_shared<ViewerCallback>();
         m_viewcallback->SetPublisher(&m_cloud_pub);
         onet::lidar::config::Deserialize(m_dev_param, param_file);
         ClearParameter();
-        // get parameters
-        // e.g.
-        // m_node.getParameter()
-        // ...
     }
     bool ConnectDevice()
     {
@@ -341,100 +337,80 @@ struct LidarRosDriver::Impl
         }
         return state;
     }
-    bool Play()
+    bool StartDevice()
     {
         bool state=false;
-        int type;
-        if(m_node.getParam("play",type))
+        XmlRpc::XmlRpcValue option_xml;
+        if(m_node.getParam("start_device",option_xml))
         {
             state=true;
-            switch (type)
+            bool saveable=static_cast<bool>(option_xml["savable"]);
+            int rule=static_cast<int>(option_xml["folder_rule"]);
+            std::string path=static_cast<std::string>(option_xml["path"]);
+            ROS_INFO("savable:%d folder_rule:%d path:%s.",saveable,rule,path.c_str());
+            lidar::WriteRawDataOption option(saveable,(lidar::WriteRawDataOption::FolderRule)rule,path);
+            if(m_playback)
             {
-            case 1: //play
-            {
-                XmlRpc::XmlRpcValue option_xml;
-                if(m_node.getParam("gather_parameter",option_xml))
+                if(m_playback_device)
                 {
-                    bool saveable=static_cast<bool>(option_xml["savable"]);
-                    int rule=static_cast<int>(option_xml["folder_rule"]);
-                    std::string path=static_cast<std::string>(option_xml["path"]);
-                    ROS_INFO("savable:%d folder_rule:%d path:%s.",saveable,rule,path.c_str());
-                    lidar::WriteRawDataOption option(saveable,(lidar::WriteRawDataOption::FolderRule)rule,path);
-                    if(m_playback)
+                    if(m_playback_device->Start(m_viewcallback,option))
                     {
-                       if(m_playback_device)
-                       {
-                           if(m_playback_device->Start(m_viewcallback,option))
-                           {
-                               ROS_INFO("Error:Playback failed.");
-                           }
-                       }
-                    }
-                    else
-                    {
-                        if(m_lidar_device)
-                        {
-                            if(!m_lidar_device->Start(m_viewcallback,option))
-                            {
-                                ROS_INFO("Error:Failed to start scanning on the LiDAR sensor.");
-                            }
-                        }
+                        ROS_INFO("Error:Playback failed.");
                     }
                 }
             }
-                break;
-            case 2: //pause
+            else
             {
-                if(m_playback)
+                if(m_lidar_device)
                 {
-                   if(m_playback_device && m_playback_device->IsStarted())
-                   {
-                       if(!m_playback_device->Stop())
-                       {
-                            ROS_INFO("Error:Playback stop failed");
-                       }
-                   }
-                }
-                else
-                {
-                    if(m_lidar_device && m_lidar_device->IsStarted())
+                    if(!m_lidar_device->Start(m_viewcallback,option))
                     {
-                        if(!m_lidar_device->Stop())
-                        {
-                            ROS_INFO("Error:Lidar Device stop failed");
-                        }
+                        ROS_INFO("Error:Failed to start scanning on the LiDAR sensor.");
                     }
                 }
-            }
-                break;
-            case 0: //stop
-            {
-                if(m_playback)
-                {
-                   if(m_playback_device && m_playback_device->IsStarted())
-                   {
-                       if(m_playback_device->Stop())
-                       {
-                           m_playback_device=nullptr;
-                       }
-                   }
-                }
-                else
-                {
-                    if(m_lidar_device && m_lidar_device->IsStarted())
-                    {
-                        if(m_lidar_device->Stop())
-                        {
-                            m_lidar_device=nullptr;
-                        }
-                    }
-                }
-            }
-                break;
-
             }
         }
         return state;
+    }
+    bool PauseDevice()
+    {
+        if(!m_playback_device) return false;
+    	bool state=false;
+        int pause=0;
+        if(m_node.getParam("pause_device",pause))
+        {
+            state=true;
+            if(m_playback_device && m_playback_device->IsStarted())
+            {
+                m_playback_device->Pause(bool(pause));
+            }
+        }
+    	return state;
+    }
+    bool StopDevice()
+    {
+       bool state=true;
+       if(m_playback)
+       {
+          if(m_playback_device && m_playback_device->IsStarted())
+          {
+              if(!m_playback_device->Stop())
+              {
+                   ROS_INFO("Error:Playback stop failed");
+              }
+          }
+       }
+       else
+       {
+           if(m_lidar_device && m_lidar_device->IsStarted())
+           {
+               if(!m_lidar_device->Stop())
+               {
+                   ROS_INFO("Error:Lidar Device stop failed");
+               }
+           }
+       }
+       return state;
     }
     bool TimeOut()
     {
@@ -495,9 +471,17 @@ struct LidarRosDriver::Impl
             {
                 state=this->DisconnectDevice();
             }
-            else if(update_parameter=="play")
+            else if(update_parameter=="start_device")
             {
-                state=this->Play();
+                state=this->StartDevice();
+            }
+            else if(update_parameter=="pause_device")
+            {
+                state=this->PauseDevice();
+            }
+            else if(update_parameter=="stop_device")
+            {
+                state=this->StopDevice();
             }
             if(state)
             {

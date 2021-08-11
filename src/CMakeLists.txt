@@ -27,8 +27,6 @@ download_project(
 add_subdirectory(${cppbase_SOURCE_DIR} ${cppbase_BINARY_DIR})
 set(CPPBASE_INCLUDE_DIR ${cppbase_SOURCE_DIR} CACHE STRING "")
 
-add_compile_definitions(_GLIBCXX_USE_CXX11_ABI=1)
-
 set(USE_OPEN3D OFF)
 download_project(
   PROJ           lidardevice

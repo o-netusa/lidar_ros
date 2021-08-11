@@ -8,7 +8,7 @@
 
 static std::string title =
     "\n*********************************\n"
-    "**  a.CreateDevice(Lidar only)  \n"
+    "**  a.ConnectDevice(Lidar only)  \n"
     "**  b.InitDevice                \n"
     "**  c.SetLaser                  \n"
     "**  d.SetEchoNumber             \n"
@@ -16,13 +16,15 @@ static std::string title =
     "**  f.SetScanMode               \n"
     "**  g.SetPlayback               \n"
     "**  h.SetViewSpeed              \n"
-    "**  i.SetDisconnect             \n"
-    "**  j.Set Play state            \n"
+    "**  i.Disconnect                \n"
+    "**  j.StartDevice           	 \n"
+    "**  k.PauseDevice               \n"
+    "**  l.Stop                      \n"
     "** ****press q to quit********* **";
 
 void PointCloudCallback(const sensor_msgs::PointCloud::ConstPtr &msg)
 {
-    ROS_INFO("PointCloud Size:%d\n",msg->points.size());
+    ROS_INFO("PointCloud Size:%u\n",msg->points.size());
 }
 
 void ClearParameter(ros::NodeHandle &m_node)
@@ -42,7 +44,7 @@ int main(int argc, char *argv[])
 {
     ros::init(argc,argv,"test_node");
     ros::NodeHandle node;
-    ros::Subscriber cloud_sub=node.subscribe("cloud",100,PointCloudCallback);
+    ros::Subscriber cloud_sub=node.subscribe("point_cloud",100,PointCloudCallback);
     ClearParameter(node);
     ros::Rate loop_rate(1);
     std::atomic_bool flag_loop{true};
@@ -162,13 +164,32 @@ int main(int argc, char *argv[])
                 break;
             case 'j':
             {
-                node.setParam("update_device_parameter","play");
-                std::cout << "Enter 1=play 2=pause 0=stop : ";
-                int mode;
-                std::cin >> mode;
-                node.setParam("play",mode);
+                node.setParam("update_device_parameter","start_device");
+                std::cout << "Enter saveable(0,1) folder_rule(0,1,2) save_path: ";
+                int saveable;
+                int  folder_rule;
+                std::string save_path;
+                std::cin >> saveable >> folder_rule >> save_path;
+                XmlRpc::XmlRpcValue option_xml;
+                option_xml["savable"]=saveable;
+                option_xml["folder_rule"]=folder_rule;
+                option_xml["path"]=save_path;
+                node.setParam("start",option_xml);
             }
                 break;
+            case 'k':
+            {
+                node.setParam("update_device_parameter","pause_device");
+                std::cout << "Enter pause(0,1)<note:Pause can only be done on the playback>: ";
+                int pause;
+                node.setParam("pause",pause);
+            }
+            	break;
+            case 'l':
+            {
+                node.setParam("update_device_parameter","stop_device");
+            }
+            	break;
             case 'q':
                 flag_loop=false;
                 break;
