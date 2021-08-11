@@ -19,7 +19,7 @@ static std::string title =
     "**  i.Disconnect                \n"
     "**  j.StartDevice           	 \n"
     "**  k.PauseDevice               \n"
-    "**  l.Stop                      \n"
+    "**  l.StopDevice                \n"
     "** ****press q to quit********* **";
 
 void PointCloudCallback(const sensor_msgs::PointCloud::ConstPtr &msg)
