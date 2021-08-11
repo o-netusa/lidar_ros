@@ -41,6 +41,7 @@ public:
         {
             return;
         }
+        ROS_INFO("start time:%d nsec",ros::Time::now().toNSec());
         sensor_msgs::PointCloud pointcloud;
         pointcloud.header.stamp=ros::Time::now();
         pointcloud.header.frame_id="sensor_frame";
@@ -57,6 +58,7 @@ public:
             pointcloud.points[i].y = pt[1];
             pointcloud.points[i].z = pt[2];
         }
+        ROS_INFO("end time:%d nsec",ros::Time::now().toNSec());
         m_cloud_pub->publish(pointcloud);
     }
     void PlaybackDone() {}
@@ -66,28 +68,27 @@ public:
 
 onet::lidar::PlaybackDevice *GetPlaybackDevice(const std::vector<std::string> &file_list)
 {
-    static uuids::uuid play_device_id = uuids::uuid();
-    if (!play_device_id.is_nil())
-    {
-        onet::lidar::DeviceManager::GetInstance().RemoveDevice(play_device_id);
-        play_device_id = uuids::uuid();
-    }
-    play_device_id = lidar::DeviceManager::GetInstance().CreateDevice(file_list);
-    return dynamic_cast<lidar::PlaybackDevice *>(
-        lidar::DeviceManager::GetInstance().GetDevice(play_device_id));
+        static uuids::uuid play_device_id{};
+        if (!play_device_id.is_nil())
+        {
+            onet::lidar::DeviceManager::GetInstance().RemoveDevice(play_device_id);
+            play_device_id = uuids::uuid();
+        }
+        play_device_id = lidar::DeviceManager::GetInstance().CreateDevice(file_list);
+        return dynamic_cast<lidar::PlaybackDevice *>(
+            lidar::DeviceManager::GetInstance().GetDevice(play_device_id));
 }
 
-
 onet::lidar::LidarDevice *GetLidarDevice(const std::string &strIP, int port)
-{    
-    static uuids::uuid lidar_device_id{};// = uuids::uuid();
-    if (!lidar_device_id.is_nil())
-    {
-        onet::lidar::DeviceManager::GetInstance().RemoveDevice(lidar_device_id);
-    }
-    lidar_device_id = onet::lidar::DeviceManager::GetInstance().CreateDevice(strIP, port);
-    return dynamic_cast<lidar::LidarDevice *>(
-        lidar::DeviceManager::GetInstance().GetDevice(lidar_device_id));
+{
+        static uuids::uuid lidar_device_id{};
+        if (!lidar_device_id.is_nil())
+        {
+            onet::lidar::DeviceManager::GetInstance().RemoveDevice(lidar_device_id);
+        }
+        lidar_device_id = onet::lidar::DeviceManager::GetInstance().CreateDevice(strIP, port);
+        return dynamic_cast<lidar::LidarDevice *>(
+            lidar::DeviceManager::GetInstance().GetDevice(lidar_device_id));
 }
 
 struct LidarRosDriver::Impl
@@ -101,7 +102,6 @@ struct LidarRosDriver::Impl
     lidar::LidarDevice *m_lidar_device{nullptr};
     lidar::PlaybackDevice *m_playback_device{nullptr};
     std::shared_ptr<onet::lidar::DlphDeviceParameter> m_dev_param;
-
     Impl(ros::NodeHandle node) : m_node(node)
     {
         m_cloud_pub=m_node.advertise<sensor_msgs::PointCloud>("cloud",100);
@@ -126,7 +126,7 @@ struct LidarRosDriver::Impl
             {
                 ip=static_cast<std::string>(connect_xml["ip"]);
                 port=static_cast<int>(connect_xml["port"]);
-                ROS_INFO("ip:%s por=%d\n",ip.c_str(),port);
+                ROS_INFO("ip:%s por:%d\n",ip.c_str(),port);
                 state=true;
             }
         }
@@ -176,6 +176,7 @@ struct LidarRosDriver::Impl
 
     bool SetLaserParameter()
     {
+    	if(!m_lidar_device) return false;
         bool state=false;
         LaserParameter laserparam;
         try
@@ -186,7 +187,7 @@ struct LidarRosDriver::Impl
                 laserparam.level=static_cast<int>(laserparam_xml["level"]);
                 laserparam.factor=static_cast<int>(laserparam_xml["factor"]);
                 laserparam.pulse_width=static_cast<int>(laserparam_xml["pulse_width"]);
-                ROS_INFO("level:%d factor=%d pulse_width=%d.",laserparam.level,laserparam.factor,laserparam.pulse_width);
+                ROS_INFO("level:%d factor:%d pulse_width:%d.",laserparam.level,laserparam.factor,laserparam.pulse_width);
                 state=true;
             }
         }
@@ -195,7 +196,7 @@ struct LidarRosDriver::Impl
             ROS_ERROR("Error:%s",e.what());
             return state;
         }
-        if(!m_lidar_device) return state;
+        
         try
         {
             m_lidar_device->SetLaser(laserparam);
@@ -208,11 +209,12 @@ struct LidarRosDriver::Impl
     }
     bool SetEchoNumberParameter()
     {
+    	if(!m_lidar_device) return false;
         bool state=false;
         int echo_number;
          if(m_node.getParam("echo_number",echo_number))
          {
-             ROS_INFO("echo_number=%d.",echo_number);
+             ROS_INFO("echo_number:%d.",echo_number);
              state=true;
              try
              {
@@ -228,13 +230,14 @@ struct LidarRosDriver::Impl
 
     bool SetRawDataType()
     {
+    	if(!m_lidar_device) return false;
         bool state=false;
         try
         {
             int32_t type;
             if(m_node.getParam("raw_data_type",type))
             {
-                ROS_INFO("raw_data_type=%d.",type);
+                ROS_INFO("raw_data_type:%d.",type);
                 state=true;
                 m_lidar_device->SetRawDataType((RawDataType)type);
             }
@@ -247,13 +250,14 @@ struct LidarRosDriver::Impl
     }
     bool SetScanMode()
     {
+    	if(!m_lidar_device) return false;
         bool state=false;
         try
         {
             int mode;
             if(m_node.getParam("scan_mode",mode))
             {
-                ROS_INFO("scan_mode=%d.",mode);
+                ROS_INFO("scan_mode:%d.",mode);
                 state=true;
                 m_lidar_device->SetScanMode((ScanMode)mode);
             }
@@ -266,6 +270,7 @@ struct LidarRosDriver::Impl
     }
     bool SetViewParameter()
     {
+    	if(!m_lidar_device) return false;
         bool state=false;
         ViewParameter viewparam;
         try
@@ -294,7 +299,6 @@ struct LidarRosDriver::Impl
             ROS_INFO("Error:%s",e.what());
             return state;
         }
-        if(!m_lidar_device) return state;
         try
         {
             m_lidar_device->SetViewSpeed(viewparam);
@@ -354,7 +358,7 @@ struct LidarRosDriver::Impl
                     bool saveable=static_cast<bool>(option_xml["savable"]);
                     int rule=static_cast<int>(option_xml["folder_rule"]);
                     std::string path=static_cast<std::string>(option_xml["path"]);
-                    ROS_INFO("savable=%d folder_rule=%d path=%s.",saveable,rule,path.c_str());
+                    ROS_INFO("savable:%d folder_rule:%d path:%s.",saveable,rule,path.c_str());
                     lidar::WriteRawDataOption option(saveable,(lidar::WriteRawDataOption::FolderRule)rule,path);
                     if(m_playback)
                     {
@@ -432,7 +436,23 @@ struct LidarRosDriver::Impl
         }
         return state;
     }
-    void UpdateParameter()
+    bool TimeOut()
+    {
+     	static uint64_t start_time=0;
+     	if(start_time==0)
+     	{
+     	    start_time=ros::Time::now().toNSec();
+     	    return false;
+	}
+	uint64_t current_time=ros::Time::now().toNSec();
+	if(current_time-start_time>=10000000000) //超时10秒(10000000000纳秒)
+	{
+	    start_time=0;
+	    return true;
+	}
+	return false;
+    }
+    void UpdateParameter(int &count)
     {
         std::string update_parameter;
 
@@ -485,6 +505,15 @@ struct LidarRosDriver::Impl
                 m_node.deleteParam(update_param);
                 m_node.deleteParam(update_parameter);
             }
+            else
+            {
+               if(TimeOut())
+               {
+                   ROS_INFO("timeout delete parameter");
+                   m_node.deleteParam(update_param);
+                   m_node.deleteParam(update_parameter);
+	       }
+	    }
         }
     }
     void ClearParameter()
@@ -503,9 +532,10 @@ struct LidarRosDriver::Impl
     {
         m_set_thread=std::thread([this]{
             this->m_running=true;
+            int count=0;
             ros::Rate loop_rate(5);
             while (this->m_running) {
-                this->UpdateParameter();
+                this->UpdateParameter(count);
                 loop_rate.sleep();
             }
         });

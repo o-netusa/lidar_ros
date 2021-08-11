@@ -4,7 +4,7 @@
 
 
 ros::NodeHandle node;
-TEST(DriverTest, LidarRosDriver)
+TEST(DeviceTests, LidarRosDriver)
 {    
     onet::lidar_ros::LidarRosDriver dvr(node);
     dvr.Start();

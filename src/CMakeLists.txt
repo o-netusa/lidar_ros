@@ -60,6 +60,9 @@ add_subdirectory(lidar_ros_driver)
 add_subdirectory(test_node)
 add_subdirectory(tests)
 
+include(ClangFormat)
+clang_format_recurse("lidar_ros_driver" "test_node" "tests")
+
 
 #############
 ## Install ##
