@@ -159,7 +159,7 @@ int main(int argc, char *argv[])
                 break;
             case 'i':
             {
-                node.setParam("update_device_parameter","disconnect_device");
+                node.setParam("update_device_parameter","disconnect");
             }
                 break;
             case 'j':

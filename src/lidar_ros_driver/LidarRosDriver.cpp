@@ -467,7 +467,7 @@ struct LidarRosDriver::Impl
             {
                 state=this->SetViewParameter();
             }
-            else if(update_parameter=="disconnect_device")
+            else if(update_parameter=="disconnect")
             {
                 state=this->DisconnectDevice();
             }
