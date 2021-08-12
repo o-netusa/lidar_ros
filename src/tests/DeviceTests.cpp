@@ -3,9 +3,9 @@
 #include "../lidar_ros_driver/LidarRosDriver.h"
 
 
-ros::NodeHandle node;
-TEST(DeviceTests, LidarRosDriver)
+TEST(LidarRosDriver, LidarRosDriver)
 {    
+    ros::NodeHandle node;
     onet::lidar_ros::LidarRosDriver dvr(node);
     dvr.Start();
     EXPECT_TRUE(dvr.IsRunning());
@@ -15,7 +15,7 @@ TEST(DeviceTests, LidarRosDriver)
 
 int main(int argc, char **argv)
 {
-    ros::init(argc, argv, "tests");
     ::testing::InitGoogleTest(&argc, argv);
+    ros::init(argc, argv, "tests");
     return RUN_ALL_TESTS();
 }

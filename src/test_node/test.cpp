@@ -6,6 +6,20 @@
 #include <future>
 #include <XmlRpcValue.h>
 
+static char update_param[]="update_device_parameter";
+static std::string connect_flag="connect";
+static std::string init_device_flag="init_device";
+static std::string laser_parameter_flag="laser_parameter";
+static std::string echo_number_flag="echo_number";
+static std::string raw_data_type_flag="raw_data_type";
+static std::string scan_mode_flag="scan_mode";
+static std::string playback_flag="playback";
+static std::string view_parameter_flag="view_parameter";
+static std::string disconnect_flag="disconnect";
+static std::string start_device_flag="start_device";
+static std::string pause_device_flag="pause_device";
+static std::string stop_device_flag="stop_device";
+
 static std::string title =
     "\n*********************************\n"
     "**  a.ConnectDevice(Lidar only)  \n"
@@ -29,14 +43,14 @@ void PointCloudCallback(const sensor_msgs::PointCloud::ConstPtr &msg)
 
 void ClearParameter(ros::NodeHandle &m_node)
     {
-       if(m_node.hasParam("update_device_parameter"))
+       if(m_node.hasParam(update_param))
        {
           std::string update_parameter;
-          if(m_node.getParam("update_device_parameter",update_parameter))
+          if(m_node.getParam(update_param,update_parameter))
           {
               m_node.deleteParam(update_parameter);
 	   }
-       	  m_node.deleteParam("update_device_parameter");
+          m_node.deleteParam(update_param);
        }
     }
 
@@ -59,7 +73,7 @@ int main(int argc, char *argv[])
             {
             case 'a':
             {
-                node.setParam("update_device_parameter","connect");
+                node.setParam(update_param,connect_flag);
                 std::cout << "Enter ip-address port: ";
                 std::string ip;
                 int port;
@@ -67,17 +81,17 @@ int main(int argc, char *argv[])
                 XmlRpc::XmlRpcValue connect_xml;
                 connect_xml["ip"]=ip;
                 connect_xml["port"]=port;
-                node.setParam("connect",connect_xml);
+                node.setParam(connect_flag,connect_xml);
             }
                 break;
             case 'b':
             {
-                node.setParam("update_device_parameter","init_device");
+                node.setParam(update_param,init_device_flag);
             }
                 break;
             case 'c':
             {
-                node.setParam("update_device_parameter","laser_parameter");
+                node.setParam(update_param,laser_parameter_flag);
                 int level,factor,pulse_width;
                 std::cout << "Enter level[0-19] factor[4-10] pulse_width[0-15]: ";
                 std::cin >> level >> factor >> pulse_width;
@@ -85,50 +99,50 @@ int main(int argc, char *argv[])
                 Laser_xml["level"]=level;
                 Laser_xml["factor"]=factor;
                 Laser_xml["pulse_width"]=pulse_width;
-                node.setParam("laser_parameter",Laser_xml);
+                node.setParam(laser_parameter_flag,Laser_xml);
             }
                 break;
             case 'd':
             {
-                node.setParam("update_device_parameter","echo_number");
+                node.setParam(update_param,echo_number_flag);
                 std::cout << "Enter echo[1-4]: ";
                 int echo;
                 std::cin >> echo;
-                node.setParam("echo_number",echo);
+                node.setParam(echo_number_flag,echo);
             }
                 break;
             case 'e':
             {
-                node.setParam("update_device_parameter","raw_data_type");
+                node.setParam(update_param,raw_data_type_flag);
                 std::cout << "Enter raw-data-type[0-1(0 means FPGA, 1 means DSP)]: ";
                 int type;
                 std::cin >> type;
-                node.setParam("raw_data_type",type);
+                node.setParam(raw_data_type_flag,type);
             }
                 break;
             case 'f':
             {
-                node.setParam("update_device_parameter","scan_mode");
+                node.setParam(update_param,scan_mode_flag);
                 std::cout << "Enter scan-mode[0,1](0 means TWO-WAY, 1 means ONE-WAY): ";
                 int mode;
                 std::cin >> mode;
-                node.setParam("scan_mode",mode);
+                node.setParam(scan_mode_flag,mode);
             }
                 break;
             case 'g':
             {
-                node.setParam("update_device_parameter","playback");
+                node.setParam(update_param,playback_flag);
                 std::cout << "Enter playback file: ";
                 std::string file;
                 std::cin >> file;
                 std::vector<std::string> file_list;
                 file_list.push_back(file);
-                node.setParam("playback",file_list);
+                node.setParam(playback_flag,file_list);
             }
                 break;
             case 'h':
             {
-                node.setParam("update_device_parameter","view_parameter");
+                node.setParam(update_param,view_parameter_flag);
                 int frame;
                 int steps[4];
                 double perspectives[5];
@@ -153,18 +167,18 @@ int main(int argc, char *argv[])
                     perspective_xml[icount++]=perspective;
                 }
                 view_xml["perspectives"]=perspective_xml;
-                node.setParam("view_parameter",view_xml);
+                node.setParam(view_parameter_flag,view_xml);
 
             }
                 break;
             case 'i':
             {
-                node.setParam("update_device_parameter","disconnect");
+                node.setParam(update_param,disconnect_flag);
             }
                 break;
             case 'j':
             {
-                node.setParam("update_device_parameter","start_device");
+                node.setParam(update_param,start_device_flag);
                 std::cout << "Enter saveable(0,1) folder_rule(0,1,2) save_path: ";
                 int saveable;
                 int  folder_rule;
@@ -174,20 +188,20 @@ int main(int argc, char *argv[])
                 option_xml["savable"]=saveable;
                 option_xml["folder_rule"]=folder_rule;
                 option_xml["path"]=save_path;
-                node.setParam("start",option_xml);
+                node.setParam(start_device_flag,option_xml);
             }
                 break;
             case 'k':
             {
-                node.setParam("update_device_parameter","pause_device");
+                node.setParam(update_param,pause_device_flag);
                 std::cout << "Enter pause(0,1)<note:Pause can only be done on the playback>: ";
                 int pause;
-                node.setParam("pause",pause);
+                node.setParam(pause_device_flag,pause);
             }
             	break;
             case 'l':
             {
-                node.setParam("update_device_parameter","stop_device");
+                node.setParam(update_param,stop_device_flag);
             }
             	break;
             case 'q':

@@ -23,6 +23,19 @@
 
 namespace onet { namespace lidar_ros {
 
+static std::string connect_flag="connect";
+static std::string init_device_flag="init_device";
+static std::string laser_parameter_flag="laser_parameter";
+static std::string echo_number_flag="echo_number";
+static std::string raw_data_type_flag="raw_data_type";
+static std::string scan_mode_flag="scan_mode";
+static std::string playback_flag="playback";
+static std::string view_parameter_flag="view_parameter";
+static std::string disconnect_flag="disconnect";
+static std::string start_device_flag="start_device";
+static std::string pause_device_flag="pause_device";
+static std::string stop_device_flag="stop_device";
+
 static char update_param[]="update_device_parameter";
 static auto param_file = (fs::path(cppbase::filesystem::GetConfigDir()) /
                           onet::lidar::LIDAR_CHECK_FILE).string(); // default param file
@@ -30,26 +43,23 @@ static auto param_file = (fs::path(cppbase::filesystem::GetConfigDir()) /
 class ViewerCallback  :public onet::lidar::DeviceCallback
 {
 public:
-    void SetPublisher(ros::Publisher* cloud_pub)
+    void SetPublisher(ros::Publisher *cloud_pub) { m_cloud_pub = cloud_pub; }
+    void HandlePointCloud(uint32_t frame_id, std::shared_ptr<onet::lidar::PointCloud> cloud,
+                          [[maybe_unused]] const std::string &file_name = {})
     {
-        m_cloud_pub=cloud_pub;
-    }
-    void HandlePointCloud(uint32_t frame_id, std::shared_ptr<onet::lidar::PointCloud> cloud,[[maybe_unused]]
-     const std::string &file_name = {})
-    {
-        if (!cloud || m_cloud_pub==nullptr)
+        if (!cloud || m_cloud_pub == nullptr)
         {
             return;
         }
-        int64_t start_time=ros::Time::now().toNSec();
+        int64_t start_time = ros::Time::now().toNSec();
         sensor_msgs::PointCloud pointcloud;
-        pointcloud.header.stamp=ros::Time::now();
-        pointcloud.header.frame_id="sensor_frame";
+        pointcloud.header.stamp = ros::Time::now();
+        pointcloud.header.frame_id = "sensor_frame";
         pointcloud.points.resize(cloud->size());
         pointcloud.channels.resize(2);
-        pointcloud.channels[0].name="intensities";
+        pointcloud.channels[0].name = "intensities";
         pointcloud.channels[0].values.resize(cloud->size());
-        pointcloud.channels[1].name="rgb";
+        pointcloud.channels[1].name = "rgb";
         pointcloud.channels[1].values.resize(cloud->size());
         for (size_t i = 0; i < cloud->size(); i++)
         {
@@ -58,7 +68,7 @@ public:
             pointcloud.points[i].y = pt[1];
             pointcloud.points[i].z = pt[2];
         }
-        ROS_INFO("end time:%d nsec",ros::Time::now().toNSec()-start_time);
+        ROS_INFO("end time:%d nsec", ros::Time::now().toNSec() - start_time);
         m_cloud_pub->publish(pointcloud);
     }
     void PlaybackDone() {}
@@ -68,15 +78,15 @@ public:
 
 onet::lidar::PlaybackDevice *GetPlaybackDevice(const std::vector<std::string> &file_list)
 {
-        static uuids::uuid play_device_id{};
-        if (!play_device_id.is_nil())
-        {
-            onet::lidar::DeviceManager::GetInstance().RemoveDevice(play_device_id);
-            play_device_id = uuids::uuid();
-        }
-        play_device_id = lidar::DeviceManager::GetInstance().CreateDevice(file_list);
-        return dynamic_cast<lidar::PlaybackDevice *>(
-            lidar::DeviceManager::GetInstance().GetDevice(play_device_id));
+    static uuids::uuid play_device_id{};
+    if (!play_device_id.is_nil())
+    {
+        onet::lidar::DeviceManager::GetInstance().RemoveDevice(play_device_id);
+        play_device_id = uuids::uuid();
+    }
+    play_device_id = lidar::DeviceManager::GetInstance().CreateDevice(file_list);
+    return dynamic_cast<lidar::PlaybackDevice *>(
+        lidar::DeviceManager::GetInstance().GetDevice(play_device_id));
 }
 
 onet::lidar::LidarDevice *GetLidarDevice(const std::string &strIP, int port)
@@ -118,7 +128,7 @@ struct LidarRosDriver::Impl
         try
         {
             XmlRpc::XmlRpcValue connect_xml;
-            if(m_node.getParam("connect",connect_xml))
+            if(m_node.getParam(connect_flag,connect_xml))
             {
                 ip=static_cast<std::string>(connect_xml["ip"]);
                 port=static_cast<int>(connect_xml["port"]);
@@ -178,7 +188,7 @@ struct LidarRosDriver::Impl
         try
         {
             XmlRpc::XmlRpcValue laserparam_xml;
-            if(m_node.getParam("laser_parameter",laserparam_xml))
+            if(m_node.getParam(laser_parameter_flag,laserparam_xml))
             {
                 laserparam.level=static_cast<int>(laserparam_xml["level"]);
                 laserparam.factor=static_cast<int>(laserparam_xml["factor"]);
@@ -208,7 +218,7 @@ struct LidarRosDriver::Impl
     	if(!m_lidar_device) return false;
         bool state=false;
         int echo_number;
-         if(m_node.getParam("echo_number",echo_number))
+         if(m_node.getParam(echo_number_flag,echo_number))
          {
              ROS_INFO("echo_number:%d.",echo_number);
              state=true;
@@ -231,7 +241,7 @@ struct LidarRosDriver::Impl
         try
         {
             int32_t type;
-            if(m_node.getParam("raw_data_type",type))
+            if(m_node.getParam(raw_data_type_flag,type))
             {
                 ROS_INFO("raw_data_type:%d.",type);
                 state=true;
@@ -251,7 +261,7 @@ struct LidarRosDriver::Impl
         try
         {
             int mode;
-            if(m_node.getParam("scan_mode",mode))
+            if(m_node.getParam(scan_mode_flag,mode))
             {
                 ROS_INFO("scan_mode:%d.",mode);
                 state=true;
@@ -272,7 +282,7 @@ struct LidarRosDriver::Impl
         try
         {
             XmlRpc::XmlRpcValue viewparam_xml;
-            if(m_node.getParam("view_parameter",viewparam_xml) && viewparam_xml.getType()==XmlRpc::XmlRpcValue::TypeStruct)
+            if(m_node.getParam(view_parameter_flag,viewparam_xml) && viewparam_xml.getType()==XmlRpc::XmlRpcValue::TypeStruct)
             {
                 state=true;
                 viewparam.frame=static_cast<int>(viewparam_xml["frame"]);
@@ -312,7 +322,7 @@ struct LidarRosDriver::Impl
         if(m_playback_device && m_playback_device->IsStarted())
             return state;
         std::vector<std::string> files;
-        m_node.getParam("playback",files);
+        m_node.getParam(playback_flag,files);
         if(files.size())
         {
             state=true;
@@ -341,7 +351,7 @@ struct LidarRosDriver::Impl
     {
         bool state=false;
         XmlRpc::XmlRpcValue option_xml;
-        if(m_node.getParam("start_device",option_xml))
+        if(m_node.getParam(start_device_flag,option_xml))
         {
             state=true;
             bool saveable=static_cast<bool>(option_xml["savable"]);
@@ -377,7 +387,7 @@ struct LidarRosDriver::Impl
         if(!m_playback_device) return false;
     	bool state=false;
         int pause=0;
-        if(m_node.getParam("pause_device",pause))
+        if(m_node.getParam(pause_device_flag,pause))
         {
             state=true;
             if(m_playback_device && m_playback_device->IsStarted())
@@ -414,19 +424,19 @@ struct LidarRosDriver::Impl
     }
     bool TimeOut()
     {
-     	static uint64_t start_time=0;
-     	if(start_time==0)
-     	{
-     	    start_time=ros::Time::now().toNSec();
-     	    return false;
-	}
-	uint64_t current_time=ros::Time::now().toNSec();
-	if(current_time-start_time>=10000000000) //超时10秒(10000000000纳秒)
-	{
-	    start_time=0;
-	    return true;
-	}
-	return false;
+        static uint64_t start_time=0;
+        if(start_time==0)
+        {
+            start_time=ros::Time::now().toNSec();
+            return false;
+        }
+        uint64_t current_time=ros::Time::now().toNSec();
+        if(current_time-start_time>=5000000000) //超时5秒(5000000000纳秒)
+        {
+            start_time=0;
+            return true;
+        }
+        return false;
     }
     void UpdateParameter(std::string &update_parameter)
     {
@@ -439,57 +449,57 @@ struct LidarRosDriver::Impl
         if(!update_parameter.empty())
         {
             bool state=false;
-            if(update_parameter=="connect")
+            if(update_parameter==connect_flag)
             {
                 state=this->ConnectDevice();
             }
-            else if(update_parameter=="init_device")
+            else if(update_parameter==init_device_flag)
             {
                 state=this->InitDevice();
             }
-            else if(update_parameter=="laser_parameter")
+            else if(update_parameter==laser_parameter_flag)
             {
                 state=this->SetLaserParameter();
             }
-            else if(update_parameter=="echo_number")
+            else if(update_parameter==echo_number_flag)
             {
                 state=this->SetEchoNumberParameter();
             }
-            else if(update_parameter=="raw_data_type")
+            else if(update_parameter==raw_data_type_flag)
             {
                 state=this->SetRawDataType();
             }
-            else if(update_parameter=="scan_mode")
+            else if(update_parameter==scan_mode_flag)
             {
                 state=this->SetScanMode();
             }
-            else if(update_parameter=="playback")
+            else if(update_parameter==playback_flag)
             {
                 state=this->SetPlayback();
             }
-            else if(update_parameter=="view_parameter")
+            else if(update_parameter==view_parameter_flag)
             {
                 state=this->SetViewParameter();
             }
-            else if(update_parameter=="disconnect")
+            else if(update_parameter==disconnect_flag)
             {
                 state=this->DisconnectDevice();
             }
-            else if(update_parameter=="start_device")
+            else if(update_parameter==start_device_flag)
             {
                 state=this->StartDevice();
             }
-            else if(update_parameter=="pause_device")
+            else if(update_parameter==pause_device_flag)
             {
                 state=this->PauseDevice();
             }
-            else if(update_parameter=="stop_device")
+            else if(update_parameter==stop_device_flag)
             {
                 state=this->StopDevice();
             }
             if(state)
             {
-                ROS_INFO("delete parameter");
+                ROS_INFO("delete parameter:%s",update_parameter.c_str());
                 m_node.deleteParam(update_parameter);
                 //判断update_param参数里数据是否更新为新设置参数,更新就不删除update_param本参数
                 std::string update_parameter_temp;
@@ -506,7 +516,7 @@ struct LidarRosDriver::Impl
             {
                 if(TimeOut())
                 {
-                    ROS_INFO("timeout delete parameter");
+                    ROS_INFO("timeout delete parameter:%s",update_parameter.c_str());
                     m_node.deleteParam(update_parameter);
                     //判断update_param参数里数据是否更新为新设置参数,更新就不删除update_param本参数
                     std::string update_parameter_temp;
