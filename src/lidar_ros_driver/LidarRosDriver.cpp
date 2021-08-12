@@ -41,7 +41,7 @@ public:
         {
             return;
         }
-        ROS_INFO("start time:%d nsec",ros::Time::now().toNSec());
+        int64_t start_time=ros::Time::now().toNSec();
         sensor_msgs::PointCloud pointcloud;
         pointcloud.header.stamp=ros::Time::now();
         pointcloud.header.frame_id="sensor_frame";
@@ -58,7 +58,7 @@ public:
             pointcloud.points[i].y = pt[1];
             pointcloud.points[i].z = pt[2];
         }
-        ROS_INFO("end time:%d nsec",ros::Time::now().toNSec());
+        ROS_INFO("end time:%d nsec",ros::Time::now().toNSec()-start_time);
         m_cloud_pub->publish(pointcloud);
     }
     void PlaybackDone() {}
@@ -122,7 +122,7 @@ struct LidarRosDriver::Impl
             {
                 ip=static_cast<std::string>(connect_xml["ip"]);
                 port=static_cast<int>(connect_xml["port"]);
-                ROS_INFO("ip:%s por:%d\n",ip.c_str(),port);
+                ROS_INFO("ip:%s port:%d\n",ip.c_str(),port);
                 state=true;
             }
         }
@@ -133,26 +133,26 @@ struct LidarRosDriver::Impl
         }
         if(state)
         {
-          if(m_lidar_device && m_lidar_device->Stop())
-          {
-            	m_lidar_device=nullptr;
-          }
-          m_lidar_device=GetLidarDevice(ip,port);
-	}
+            if(m_lidar_device && m_lidar_device->Stop())
+            {
+                m_lidar_device=nullptr;
+            }
+            m_lidar_device=GetLidarDevice(ip,port);
+        }
         return state;
     }
     bool InitDevice()
     {
-	try
-	{
-	   m_lidar_device->Init();
-	}
-	catch(std::exception &e)
-	{
-	     ROS_ERROR("Error:%s",e.what());
-	}
-
-	return true;
+        if(!m_lidar_device) return false;
+        try
+        {
+            m_lidar_device->Init();
+        }
+        catch(std::exception &e)
+        {
+            ROS_ERROR("Error:%s",e.what());
+        }
+        return true;
     }
 
     bool DisconnectDevice()
@@ -165,7 +165,7 @@ struct LidarRosDriver::Impl
         }
         else
         {
-            ROS_INFO("Error:Failed to stop scanning on the LiDAR sensor.");
+            ROS_ERROR("Error:Failed to stop scanning on the LiDAR sensor.");
         }
         return state;
     }
@@ -199,7 +199,7 @@ struct LidarRosDriver::Impl
         }
         catch (std::exception &e)
         {
-            ROS_INFO("Error:%s",e.what());
+            ROS_ERROR("Error:%s",e.what());
         }
         return state;
     }
@@ -218,7 +218,7 @@ struct LidarRosDriver::Impl
              }
              catch (std::exception &e)
              {
-                 ROS_INFO("Error:%s",e.what());
+                 ROS_ERROR("Error:%s",e.what());
              }
          }
          return state;
@@ -240,7 +240,7 @@ struct LidarRosDriver::Impl
         }
         catch (std::exception &e)
         {
-            ROS_INFO("Error:%s",e.what());
+            ROS_ERROR("Error:%s",e.what());
         }
         return state;
     }
@@ -260,7 +260,7 @@ struct LidarRosDriver::Impl
         }
         catch (std::exception &e)
         {
-           ROS_INFO("Error:%s",e.what());
+           ROS_ERROR("Error:%s",e.what());
         }
         return state;
     }
@@ -292,7 +292,7 @@ struct LidarRosDriver::Impl
         }
         catch (ros::Exception &e)
         {
-            ROS_INFO("Error:%s",e.what());
+            ROS_ERROR("Error:%s",e.what());
             return state;
         }
         try
@@ -301,7 +301,7 @@ struct LidarRosDriver::Impl
         }
         catch (std::exception &e)
         {
-            ROS_INFO("Error:%s",e.what());
+            ROS_ERROR("Error:%s",e.what());
         }
         return state;
     }
@@ -355,7 +355,7 @@ struct LidarRosDriver::Impl
                 {
                     if(m_playback_device->Start(m_viewcallback,option))
                     {
-                        ROS_INFO("Error:Playback failed.");
+                        ROS_ERROR("Error:Playback failed.");
                     }
                 }
             }
@@ -365,7 +365,7 @@ struct LidarRosDriver::Impl
                 {
                     if(!m_lidar_device->Start(m_viewcallback,option))
                     {
-                        ROS_INFO("Error:Failed to start scanning on the LiDAR sensor.");
+                        ROS_ERROR("Error:Failed to start scanning on the LiDAR sensor.");
                     }
                 }
             }
@@ -396,7 +396,7 @@ struct LidarRosDriver::Impl
           {
               if(!m_playback_device->Stop())
               {
-                   ROS_INFO("Error:Playback stop failed");
+                   ROS_ERROR("Error:Playback stop failed");
               }
           }
        }
@@ -406,7 +406,7 @@ struct LidarRosDriver::Impl
            {
                if(!m_lidar_device->Stop())
                {
-                   ROS_INFO("Error:Lidar Device stop failed");
+                   ROS_ERROR("Error:Lidar Device stop failed");
                }
            }
        }
@@ -428,11 +428,15 @@ struct LidarRosDriver::Impl
 	}
 	return false;
     }
-    void UpdateParameter(int &count)
+    void UpdateParameter(std::string &update_parameter)
     {
-        std::string update_parameter;
+        //如此编写，主要是针对多参数设置时，每个参数设置对应
+        if(update_parameter.empty())
+        {
+            m_node.getParam(update_param,update_parameter);
+        }
 
-        if(m_node.getParam(update_param,update_parameter))
+        if(!update_parameter.empty())
         {
             bool state=false;
             if(update_parameter=="connect")
@@ -441,7 +445,7 @@ struct LidarRosDriver::Impl
             }
             else if(update_parameter=="init_device")
             {
-            	state=this->InitDevice();
+                state=this->InitDevice();
             }
             else if(update_parameter=="laser_parameter")
             {
@@ -485,19 +489,37 @@ struct LidarRosDriver::Impl
             }
             if(state)
             {
-            	ROS_INFO("delete parameter");
-                m_node.deleteParam(update_param);
+                ROS_INFO("delete parameter");
                 m_node.deleteParam(update_parameter);
+                //判断update_param参数里数据是否更新为新设置参数,更新就不删除update_param本参数
+                std::string update_parameter_temp;
+                if(m_node.getParam(update_param,update_parameter_temp))
+                {
+                    if(update_parameter_temp==update_parameter)
+                    {
+                        m_node.deleteParam(update_param);
+                    }
+                }
+                update_parameter.clear();
             }
             else
             {
-               if(TimeOut())
-               {
-                   ROS_INFO("timeout delete parameter");
-                   m_node.deleteParam(update_param);
-                   m_node.deleteParam(update_parameter);
-	       }
-	    }
+                if(TimeOut())
+                {
+                    ROS_INFO("timeout delete parameter");
+                    m_node.deleteParam(update_parameter);
+                    //判断update_param参数里数据是否更新为新设置参数,更新就不删除update_param本参数
+                    std::string update_parameter_temp;
+                    if(m_node.getParam(update_param,update_parameter_temp))
+                    {
+                        if(update_parameter_temp==update_parameter)
+                        {
+                            m_node.deleteParam(update_param);
+                        }
+                    }
+                    update_parameter.clear();
+                }
+            }
         }
     }
     void ClearParameter()
@@ -516,10 +538,10 @@ struct LidarRosDriver::Impl
     {
         m_set_thread=std::thread([this]{
             this->m_running=true;
-            int count=0;
             ros::Rate loop_rate(5);
+            std::string update_parameter;
             while (this->m_running) {
-                this->UpdateParameter(count);
+                this->UpdateParameter(update_parameter);
                 loop_rate.sleep();
             }
         });
