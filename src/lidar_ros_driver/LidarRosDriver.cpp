@@ -36,7 +36,7 @@ static std::string start_device_flag="start_device";
 static std::string pause_device_flag="pause_device";
 static std::string stop_device_flag="stop_device";
 
-static char update_param[]="update_device_parameter";
+static std::string update_param="update_device_parameter";
 static auto param_file = (fs::path(cppbase::filesystem::GetConfigDir()) /
                           onet::lidar::LIDAR_CHECK_FILE).string(); // default param file
 

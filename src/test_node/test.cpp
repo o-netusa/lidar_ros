@@ -6,7 +6,7 @@
 #include <future>
 #include <XmlRpcValue.h>
 
-static char update_param[]="update_device_parameter";
+static std::string update_param="update_device_parameter";
 static std::string connect_flag="connect";
 static std::string init_device_flag="init_device";
 static std::string laser_parameter_flag="laser_parameter";
