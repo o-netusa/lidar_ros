@@ -6,7 +6,7 @@
 #include <future>
 #include <XmlRpcValue.h>
 
-static std::string update_param="update_device_parameter";
+static std::string update_param_flag="update_device_parameter";
 static std::string connect_flag="connect";
 static std::string init_device_flag="init_device";
 static std::string laser_parameter_flag="laser_parameter";
@@ -19,6 +19,7 @@ static std::string disconnect_flag="disconnect";
 static std::string start_device_flag="start_device";
 static std::string pause_device_flag="pause_device";
 static std::string stop_device_flag="stop_device";
+static std::string exit_flag="exit_exec";
 
 static std::string title =
     "\n*********************************\n"
@@ -43,14 +44,14 @@ void PointCloudCallback(const sensor_msgs::PointCloud::ConstPtr &msg)
 
 void ClearParameter(ros::NodeHandle &m_node)
     {
-       if(m_node.hasParam(update_param))
+       if(m_node.hasParam(update_param_flag))
        {
           std::string update_parameter;
-          if(m_node.getParam(update_param,update_parameter))
+          if(m_node.getParam(update_param_flag,update_parameter))
           {
               m_node.deleteParam(update_parameter);
 	   }
-          m_node.deleteParam(update_param);
+          m_node.deleteParam(update_param_flag);
        }
     }
 
@@ -73,7 +74,7 @@ int main(int argc, char *argv[])
             {
             case 'a':
             {
-                node.setParam(update_param,connect_flag);
+                node.setParam(update_param_flag,connect_flag);
                 std::cout << "Enter ip-address port: ";
                 std::string ip;
                 int port;
@@ -86,12 +87,12 @@ int main(int argc, char *argv[])
                 break;
             case 'b':
             {
-                node.setParam(update_param,init_device_flag);
+                node.setParam(update_param_flag,init_device_flag);
             }
                 break;
             case 'c':
             {
-                node.setParam(update_param,laser_parameter_flag);
+                node.setParam(update_param_flag,laser_parameter_flag);
                 int level,factor,pulse_width;
                 std::cout << "Enter level[0-19] factor[4-10] pulse_width[0-15]: ";
                 std::cin >> level >> factor >> pulse_width;
@@ -104,7 +105,7 @@ int main(int argc, char *argv[])
                 break;
             case 'd':
             {
-                node.setParam(update_param,echo_number_flag);
+                node.setParam(update_param_flag,echo_number_flag);
                 std::cout << "Enter echo[1-4]: ";
                 int echo;
                 std::cin >> echo;
@@ -113,7 +114,7 @@ int main(int argc, char *argv[])
                 break;
             case 'e':
             {
-                node.setParam(update_param,raw_data_type_flag);
+                node.setParam(update_param_flag,raw_data_type_flag);
                 std::cout << "Enter raw-data-type[0-1(0 means FPGA, 1 means DSP)]: ";
                 int type;
                 std::cin >> type;
@@ -122,7 +123,7 @@ int main(int argc, char *argv[])
                 break;
             case 'f':
             {
-                node.setParam(update_param,scan_mode_flag);
+                node.setParam(update_param_flag,scan_mode_flag);
                 std::cout << "Enter scan-mode[0,1](0 means TWO-WAY, 1 means ONE-WAY): ";
                 int mode;
                 std::cin >> mode;
@@ -131,7 +132,7 @@ int main(int argc, char *argv[])
                 break;
             case 'g':
             {
-                node.setParam(update_param,playback_flag);
+                node.setParam(update_param_flag,playback_flag);
                 std::cout << "Enter playback file: ";
                 std::string file;
                 std::cin >> file;
@@ -142,7 +143,7 @@ int main(int argc, char *argv[])
                 break;
             case 'h':
             {
-                node.setParam(update_param,view_parameter_flag);
+                node.setParam(update_param_flag,view_parameter_flag);
                 int frame;
                 int steps[4];
                 double perspectives[5];
@@ -173,12 +174,12 @@ int main(int argc, char *argv[])
                 break;
             case 'i':
             {
-                node.setParam(update_param,disconnect_flag);
+                node.setParam(update_param_flag,disconnect_flag);
             }
                 break;
             case 'j':
             {
-                node.setParam(update_param,start_device_flag);
+                node.setParam(update_param_flag,start_device_flag);
                 std::cout << "Enter saveable(0,1) folder_rule(0,1,2) save_path: ";
                 int saveable;
                 int  folder_rule;
@@ -193,7 +194,7 @@ int main(int argc, char *argv[])
                 break;
             case 'k':
             {
-                node.setParam(update_param,pause_device_flag);
+                node.setParam(update_param_flag,pause_device_flag);
                 std::cout << "Enter pause(0,1)<note:Pause can only be done on the playback>: ";
                 int pause;
                 node.setParam(pause_device_flag,pause);
@@ -201,11 +202,14 @@ int main(int argc, char *argv[])
             	break;
             case 'l':
             {
-                node.setParam(update_param,stop_device_flag);
+                node.setParam(update_param_flag,stop_device_flag);
             }
             	break;
             case 'q':
+            {
+                node.setParam(update_param_flag,exit_flag);
                 flag_loop=false;
+            }
                 break;
             }
 

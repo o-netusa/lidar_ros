@@ -20,7 +20,6 @@
 #include <ros/ros.h>
 #include <XmlRpcValue.h>
 
-
 namespace onet { namespace lidar_ros {
 
 static std::string connect_flag="connect";
@@ -35,8 +34,8 @@ static std::string disconnect_flag="disconnect";
 static std::string start_device_flag="start_device";
 static std::string pause_device_flag="pause_device";
 static std::string stop_device_flag="stop_device";
-
-static std::string update_param="update_device_parameter";
+static std::string exit_flag="exit_exec";
+static std::string update_param_flag="update_device_parameter";
 static auto param_file = (fs::path(cppbase::filesystem::GetConfigDir()) /
                           onet::lidar::LIDAR_CHECK_FILE).string(); // default param file
 
@@ -51,7 +50,7 @@ public:
         {
             return;
         }
-        int64_t start_time = ros::Time::now().toNSec();
+        double start_time = ros::Time::now().toSec();
         sensor_msgs::PointCloud pointcloud;
         pointcloud.header.stamp = ros::Time::now();
         pointcloud.header.frame_id = "sensor_frame";
@@ -68,7 +67,7 @@ public:
             pointcloud.points[i].y = pt[1];
             pointcloud.points[i].z = pt[2];
         }
-        ROS_INFO("end time:%d nsec", ros::Time::now().toNSec() - start_time);
+        ROS_INFO("end time:%f sec", ros::Time::now().toSec() - start_time);
         m_cloud_pub->publish(pointcloud);
     }
     void PlaybackDone() {}
@@ -95,6 +94,7 @@ onet::lidar::LidarDevice *GetLidarDevice(const std::string &strIP, int port)
         if (!lidar_device_id.is_nil())
         {
             onet::lidar::DeviceManager::GetInstance().RemoveDevice(lidar_device_id);
+            uuids::uuid lidar_device_id{};
         }
         lidar_device_id = onet::lidar::DeviceManager::GetInstance().CreateDevice(strIP, port);
         return dynamic_cast<lidar::LidarDevice *>(
@@ -422,28 +422,26 @@ struct LidarRosDriver::Impl
        }
        return state;
     }
-    bool TimeOut()
+    bool TimeOut(uint64_t &start_time)
     {
-        static uint64_t start_time=0;
         if(start_time==0)
         {
             start_time=ros::Time::now().toNSec();
             return false;
         }
-        uint64_t current_time=ros::Time::now().toNSec();
-        if(current_time-start_time>=5000000000) //超时5秒(5000000000纳秒)
+        if(ros::Time::now().toNSec()-start_time>=10000000000) //超时5秒(5000000000纳秒)
         {
             start_time=0;
             return true;
         }
         return false;
     }
-    void UpdateParameter(std::string &update_parameter)
+    void UpdateParameter(std::string &update_parameter,uint64_t &start_time)
     {
         //如此编写，主要是针对多参数设置时，每个参数设置对应
         if(update_parameter.empty())
         {
-            m_node.getParam(update_param,update_parameter);
+            m_node.getParam(update_param_flag,update_parameter);
         }
 
         if(!update_parameter.empty())
@@ -497,34 +495,39 @@ struct LidarRosDriver::Impl
             {
                 state=this->StopDevice();
             }
+            else if(update_parameter==exit_flag)
+            {
+                m_running=false;
+            }
             if(state)
             {
+                start_time=0;
                 ROS_INFO("delete parameter:%s",update_parameter.c_str());
                 m_node.deleteParam(update_parameter);
                 //判断update_param参数里数据是否更新为新设置参数,更新就不删除update_param本参数
                 std::string update_parameter_temp;
-                if(m_node.getParam(update_param,update_parameter_temp))
+                if(m_node.getParam(update_param_flag,update_parameter_temp))
                 {
                     if(update_parameter_temp==update_parameter)
                     {
-                        m_node.deleteParam(update_param);
+                        m_node.deleteParam(update_param_flag);
                     }
                 }
                 update_parameter.clear();
             }
             else
             {
-                if(TimeOut())
+                if(TimeOut(start_time))
                 {
                     ROS_INFO("timeout delete parameter:%s",update_parameter.c_str());
                     m_node.deleteParam(update_parameter);
                     //判断update_param参数里数据是否更新为新设置参数,更新就不删除update_param本参数
                     std::string update_parameter_temp;
-                    if(m_node.getParam(update_param,update_parameter_temp))
+                    if(m_node.getParam(update_param_flag,update_parameter_temp))
                     {
                         if(update_parameter_temp==update_parameter)
                         {
-                            m_node.deleteParam(update_param);
+                            m_node.deleteParam(update_param_flag);
                         }
                     }
                     update_parameter.clear();
@@ -534,24 +537,25 @@ struct LidarRosDriver::Impl
     }
     void ClearParameter()
     {
-       if(m_node.hasParam(update_param))
-       {
-          std::string update_parameter;
-          if(m_node.getParam(update_param,update_parameter))
-          {
-              m_node.deleteParam(update_parameter);
-	   }
-       	  m_node.deleteParam(update_param);
-       }
+        if (m_node.hasParam(update_param_flag))
+        {
+            std::string update_parameter;
+            if (m_node.getParam(update_param_flag, update_parameter))
+            {
+                m_node.deleteParam(update_parameter);
+            }
+            m_node.deleteParam(update_param_flag);
+        }
     }
     void Start()
     {
         m_set_thread=std::thread([this]{
             this->m_running=true;
             ros::Rate loop_rate(5);
+            uint64_t start_time=0;
             std::string update_parameter;
             while (this->m_running) {
-                this->UpdateParameter(update_parameter);
+                this->UpdateParameter(update_parameter,start_time);
                 loop_rate.sleep();
             }
         });
@@ -565,7 +569,6 @@ struct LidarRosDriver::Impl
             m_set_thread.join();
         }
     }
-
 };
 
 LidarRosDriver::LidarRosDriver(ros::NodeHandle node)
