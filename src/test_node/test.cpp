@@ -6,6 +6,7 @@
 #include <future>
 #include <XmlRpcValue.h>
 #include <parameter_flag.h>
+#include <common_msgs/parameter_msgs.h>
 
 static std::string title =
     "\n*********************************\n"
@@ -27,6 +28,10 @@ void PointCloudCallback(const sensor_msgs::PointCloud::ConstPtr &msg)
 {
     ROS_INFO("PointCloud Size:%u\n",msg->points.size());
 }
+void ParamCallback(const common_msgs::parameter_msgs::ConstPtr &msg)
+{
+    ROS_INFO("Parameter type:%s success:%d error:%s\n",msg->parameter_flag.c_str(),msg->state,msg->error.c_str());
+}
 
 void ClearParameter(ros::NodeHandle &m_node)
     {
@@ -46,6 +51,7 @@ int main(int argc, char *argv[])
     ros::init(argc,argv,"test_node");
     ros::NodeHandle node;
     ros::Subscriber cloud_sub=node.subscribe("point_cloud",100,PointCloudCallback);
+    ros::Subscriber param_sub=node.subscribe(param_msgs,100,ParamCallback);
     ClearParameter(node);
     ros::Rate loop_rate(1);
     std::atomic_bool flag_loop{true};

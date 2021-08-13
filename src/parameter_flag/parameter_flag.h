@@ -8,6 +8,7 @@
 
 #pragma once
 #include <string>
+static std::string param_msgs="param_msgs";
 static std::string connect_flag="connect";
 static std::string init_device_flag="init_device";
 static std::string laser_parameter_flag="laser_parameter";
