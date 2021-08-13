@@ -19,23 +19,10 @@
 #include <std_msgs/String.h>
 #include <ros/ros.h>
 #include <XmlRpcValue.h>
+#include <parameter_flag.h>
 
 namespace onet { namespace lidar_ros {
 
-static std::string connect_flag="connect";
-static std::string init_device_flag="init_device";
-static std::string laser_parameter_flag="laser_parameter";
-static std::string echo_number_flag="echo_number";
-static std::string raw_data_type_flag="raw_data_type";
-static std::string scan_mode_flag="scan_mode";
-static std::string playback_flag="playback";
-static std::string view_parameter_flag="view_parameter";
-static std::string disconnect_flag="disconnect";
-static std::string start_device_flag="start_device";
-static std::string pause_device_flag="pause_device";
-static std::string stop_device_flag="stop_device";
-static std::string exit_flag="exit_exec";
-static std::string update_param_flag="update_device_parameter";
 static auto param_file = (fs::path(cppbase::filesystem::GetConfigDir()) /
                           onet::lidar::LIDAR_CHECK_FILE).string(); // default param file
 

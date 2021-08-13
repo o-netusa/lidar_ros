@@ -1,0 +1,15 @@
+#include <string>
+std::string connect_flag="connect";
+std::string init_device_flag="init_device";
+std::string laser_parameter_flag="laser_parameter";
+std::string echo_number_flag="echo_number";
+std::string raw_data_type_flag="raw_data_type";
+std::string scan_mode_flag="scan_mode";
+std::string playback_flag="playback";
+std::string view_parameter_flag="view_parameter";
+std::string disconnect_flag="disconnect";
+std::string start_device_flag="start_device";
+std::string pause_device_flag="pause_device";
+std::string stop_device_flag="stop_device";
+std::string exit_flag="exit_exec";
+std::string update_param_flag="update_device_parameter";

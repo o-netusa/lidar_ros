@@ -44,14 +44,14 @@ catkin_package(
 #  DEPENDS
 )
 
-
+set(PARAMETER_FLAG_INCLUDE "${CMAKE_SOURCE_DIR}/parameter_flag")
 ###########
 ## Build ##
 ###########
 include_directories(
   ${catkin_INCLUDE_DIRS}
   ${CPPBASE_INCLUDE_DIR}
-  ${lidardevice_INCLUDE_DIR}
+  ${PARAMETER_FLAG_INCLUDE}
 )
 
 add_subdirectory(lidar_ros_driver)
