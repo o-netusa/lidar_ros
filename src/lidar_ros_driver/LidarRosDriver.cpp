@@ -538,7 +538,7 @@ struct LidarRosDriver::Impl
     {
         m_set_thread=std::thread([this]{
             this->m_running=true;
-            ros::Rate loop_rate(5);
+            ros::Rate loop_rate(10);
             uint64_t start_time=0;
             std::string update_parameter;
             while (this->m_running) {
