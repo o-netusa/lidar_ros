@@ -1,3 +1,12 @@
+/**************************************************************************
+ * @file: parameter_flag.h
+ * @brief:
+ *
+ * Copyright (c) 2021 O-Net Technologies (Group) Limited.
+ * All rights reserved.
+ *************************************************************************/
+
+#pragma once
 #include <string>
 static std::string connect_flag="connect";
 static std::string init_device_flag="init_device";
