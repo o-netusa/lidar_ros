@@ -170,7 +170,7 @@ struct LidarRosDriver::Impl
         }
         catch(std::exception &e)
         {
-            ROS_ERROR("Error:%s--",e.what());
+            ROS_ERROR("Error:%s",e.what());
             SendParameterState(init_device_flag,false,std::string(e.what()));
         }
         return true;
@@ -497,7 +497,6 @@ struct LidarRosDriver::Impl
             int retry = 3;
             do
             {
-                //bool state=false;
                 if(update_parameter==connect_flag)
                 {
                     state=this->ConnectDevice();
