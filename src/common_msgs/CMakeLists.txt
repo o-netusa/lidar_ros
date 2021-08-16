@@ -8,7 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
 )
 add_message_files(
    FILES
-   parameter_msgs.msg
+   ParameterMsg.msg
  )
 generate_messages(
     DEPENDENCIES

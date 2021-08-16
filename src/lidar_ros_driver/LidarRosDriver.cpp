@@ -7,8 +7,9 @@
  *************************************************************************/
 
 #include "LidarRosDriver.h"
+#include "ParameterFlag.h"
 #include <common/FileSystem.h>
-#include <common/FileSystem.h>
+#include <common/Timer.h>
 #include <config/DeviceParamsConfig.h>
 #include <DeviceManager.h>
 #include <LidarDevice.h>
@@ -19,8 +20,9 @@
 #include <std_msgs/String.h>
 #include <ros/ros.h>
 #include <XmlRpcValue.h>
-#include <parameter_flag.h>
-#include <common_msgs/parameter_msgs.h>
+#include <thread>
+
+#include <common_msgs/ParameterMsg.h>
 
 namespace onet { namespace lidar_ros {
 
@@ -38,7 +40,8 @@ public:
         {
             return;
         }
-        double start_time = ros::Time::now().toSec();
+        cppbase::Timer<cppbase::us> timer;
+        timer.Start();
         sensor_msgs::PointCloud pointcloud;
         pointcloud.header.stamp = ros::Time::now();
         pointcloud.header.frame_id = "sensor_frame";
@@ -55,7 +58,8 @@ public:
             pointcloud.points[i].y = pt[1];
             pointcloud.points[i].z = pt[2];
         }
-        ROS_INFO("end time:%f sec", ros::Time::now().toSec() - start_time);
+        ROS_INFO("end time:%d us", timer.Elapsed());
+        timer.Stop();
         m_cloud_pub->publish(pointcloud);
     }
     void PlaybackDone() {}
@@ -69,7 +73,6 @@ onet::lidar::PlaybackDevice *GetPlaybackDevice(const std::vector<std::string> &f
     if (!play_device_id.is_nil())
     {
         onet::lidar::DeviceManager::GetInstance().RemoveDevice(play_device_id);
-        play_device_id = uuids::uuid();
     }
     play_device_id = lidar::DeviceManager::GetInstance().CreateDevice(file_list);
     return dynamic_cast<lidar::PlaybackDevice *>(
@@ -82,7 +85,6 @@ onet::lidar::LidarDevice *GetLidarDevice(const std::string &strIP, int port)
         if (!lidar_device_id.is_nil())
         {
             onet::lidar::DeviceManager::GetInstance().RemoveDevice(lidar_device_id);
-            uuids::uuid lidar_device_id{};
         }
         lidar_device_id = onet::lidar::DeviceManager::GetInstance().CreateDevice(strIP, port);
         return dynamic_cast<lidar::LidarDevice *>(
@@ -96,15 +98,15 @@ struct LidarRosDriver::Impl
     std::thread m_set_thread;
     ros::NodeHandle m_node;      //节点
     ros::Publisher m_cloud_pub;  //点云发布者
-    ros::Publisher m_param_pub;  //点云发布者
+    ros::Publisher m_param_pub;  //参数设置状态发布者
     std::shared_ptr<ViewerCallback> m_viewcallback{nullptr};
     lidar::LidarDevice *m_lidar_device{nullptr};
     lidar::PlaybackDevice *m_playback_device{nullptr};
     std::shared_ptr<onet::lidar::DlphDeviceParameter> m_dev_param;
     Impl(ros::NodeHandle node) : m_node(node)
     {
-        m_cloud_pub=m_node.advertise<sensor_msgs::PointCloud>("point_cloud",100);
-        m_param_pub=m_node.advertise<common_msgs::parameter_msgs>("param_msgs",100);
+        m_cloud_pub=m_node.advertise<sensor_msgs::PointCloud>(pointcloud_msgs,100);
+        m_param_pub=m_node.advertise<common_msgs::ParameterMsg>(param_msgs,100);
         m_viewcallback=std::make_shared<ViewerCallback>();
         m_viewcallback->SetPublisher(&m_cloud_pub);
         onet::lidar::config::Deserialize(m_dev_param, param_file);
@@ -112,7 +114,7 @@ struct LidarRosDriver::Impl
     }
     void SendParameterState(std::string parameter_flag,bool state,std::string error_info)
     {
-        common_msgs::parameter_msgs msgs;
+        common_msgs::ParameterMsg msgs;
         msgs.parameter_flag=parameter_flag;
         msgs.state=state;
         msgs.error=error_info;
@@ -168,7 +170,7 @@ struct LidarRosDriver::Impl
         }
         catch(std::exception &e)
         {
-            ROS_ERROR("Error:%s",e.what());
+            ROS_ERROR("Error:%s--",e.what());
             SendParameterState(init_device_flag,false,std::string(e.what()));
         }
         return true;
@@ -379,45 +381,54 @@ struct LidarRosDriver::Impl
     bool StartDevice()
     {
         bool state=false;
-        XmlRpc::XmlRpcValue option_xml;
-        if(m_node.getParam(start_device_flag,option_xml))
+
+        try{
+            XmlRpc::XmlRpcValue option_xml;
+            if(m_node.getParam(start_device_flag,option_xml))
+            {
+                state=true;
+                bool saveable=static_cast<bool>(option_xml["savable"]);
+                int rule=static_cast<int>(option_xml["folder_rule"]);
+                std::string path=static_cast<std::string>(option_xml["path"]);
+                ROS_INFO("savable:%d folder_rule:%d path:%s.",saveable,rule,path.c_str());
+                lidar::WriteRawDataOption option(saveable,(lidar::WriteRawDataOption::FolderRule)rule,path);
+                if(m_playback)
+                {
+                    if(m_playback_device)
+                    {
+                        if(!m_playback_device->Start(m_viewcallback,option))
+                        {
+                            ROS_ERROR("Error:Playback failed.");
+                            SendParameterState(start_device_flag,false,"Playback failed.");
+                        }
+                        else
+                        {
+                            SendParameterState(start_device_flag,true,"");
+                        }
+                    }
+                }
+                else
+                {
+                    if(m_lidar_device)
+                    {
+                        if(!m_lidar_device->Start(m_viewcallback,option))
+                        {
+                            ROS_ERROR("Error:Failed to start scanning on the LiDAR sensor.");
+                            SendParameterState(start_device_flag,false,"Failed to start scanning on the LiDAR sensor.");
+                        }
+                        else
+                        {
+                            SendParameterState(start_device_flag,true,"");
+                        }
+                    }
+                }
+            }
+        }
+        catch(ros::Exception &e)
         {
-            state=true;
-            bool saveable=static_cast<bool>(option_xml["savable"]);
-            int rule=static_cast<int>(option_xml["folder_rule"]);
-            std::string path=static_cast<std::string>(option_xml["path"]);
-            ROS_INFO("savable:%d folder_rule:%d path:%s.",saveable,rule,path.c_str());
-            lidar::WriteRawDataOption option(saveable,(lidar::WriteRawDataOption::FolderRule)rule,path);
-            if(m_playback)
-            {
-                if(m_playback_device)
-                {
-                    if(!m_playback_device->Start(m_viewcallback,option))
-                    {
-                        ROS_ERROR("Error:Playback failed.");
-                        SendParameterState(start_device_flag,false,"Playback failed.");
-                    }
-                    else
-                    {
-                        SendParameterState(start_device_flag,true,"");
-                    }
-                }
-            }
-            else
-            {
-                if(m_lidar_device)
-                {
-                    if(!m_lidar_device->Start(m_viewcallback,option))
-                    {
-                        ROS_ERROR("Error:Failed to start scanning on the LiDAR sensor.");
-                        SendParameterState(start_device_flag,false,"Failed to start scanning on the LiDAR sensor.");
-                    }
-                    else
-                    {
-                        SendParameterState(start_device_flag,true,"");
-                    }
-                }
-            }
+            SendParameterState(view_parameter_flag,false,std::string(e.what()));
+            ROS_ERROR("Error:%s",e.what());
+            return state;
         }
         return state;
     }
@@ -472,21 +483,7 @@ struct LidarRosDriver::Impl
        }
        return state;
     }
-    bool TimeOut(uint64_t &start_time)
-    {
-        if(start_time==0)
-        {
-            start_time=ros::Time::now().toNSec();
-            return false;
-        }
-        if(ros::Time::now().toNSec()-start_time>=10000000000) //超时5秒(5000000000纳秒)
-        {
-            start_time=0;
-            return true;
-        }
-        return false;
-    }
-    void UpdateParameter(std::string &update_parameter,uint64_t &start_time)
+    void UpdateParameter(std::string &update_parameter)
     {
         //如此编写，主要是针对多参数设置时，每个参数设置对应
         if(update_parameter.empty())
@@ -496,94 +493,82 @@ struct LidarRosDriver::Impl
 
         if(!update_parameter.empty())
         {
-            bool state=false;
-            if(update_parameter==connect_flag)
+            bool state = false;
+            int retry = 3;
+            do
             {
-                state=this->ConnectDevice();
-            }
-            else if(update_parameter==init_device_flag)
-            {
-                state=this->InitDevice();
-            }
-            else if(update_parameter==laser_parameter_flag)
-            {
-                state=this->SetLaserParameter();
-            }
-            else if(update_parameter==echo_number_flag)
-            {
-                state=this->SetEchoNumberParameter();
-            }
-            else if(update_parameter==raw_data_type_flag)
-            {
-                state=this->SetRawDataType();
-            }
-            else if(update_parameter==scan_mode_flag)
-            {
-                state=this->SetScanMode();
-            }
-            else if(update_parameter==playback_flag)
-            {
-                state=this->SetPlayback();
-            }
-            else if(update_parameter==view_parameter_flag)
-            {
-                state=this->SetViewParameter();
-            }
-            else if(update_parameter==disconnect_flag)
-            {
-                state=this->DisconnectDevice();
-            }
-            else if(update_parameter==start_device_flag)
-            {
-                state=this->StartDevice();
-            }
-            else if(update_parameter==pause_device_flag)
-            {
-                state=this->PauseDevice();
-            }
-            else if(update_parameter==stop_device_flag)
-            {
-                state=this->StopDevice();
-            }
-            else if(update_parameter==exit_flag)
-            {
-                m_running=false;
-            }
-            if(state)
-            {
-                start_time=0;
-                ROS_INFO("delete parameter:%s",update_parameter.c_str());
-                m_node.deleteParam(update_parameter);
-                //判断update_param参数里数据是否更新为新设置参数,更新就不删除update_param本参数
-                std::string update_parameter_temp;
-                if(m_node.getParam(update_param_flag,update_parameter_temp))
+                //bool state=false;
+                if(update_parameter==connect_flag)
                 {
-                    if(update_parameter_temp==update_parameter)
-                    {
-                        m_node.deleteParam(update_param_flag);
-                    }
+                    state=this->ConnectDevice();
                 }
-                update_parameter.clear();
-            }
-            else
-            {
-                if(TimeOut(start_time))
+                else if(update_parameter==init_device_flag)
                 {
-                    ROS_INFO("timeout delete parameter:%s",update_parameter.c_str());
-                    SendParameterState(update_parameter,false,"timeout");
-                    m_node.deleteParam(update_parameter);
-                    //判断update_param参数里数据是否更新为新设置参数,更新就不删除update_param本参数
-                    std::string update_parameter_temp;
-                    if(m_node.getParam(update_param_flag,update_parameter_temp))
-                    {
-                        if(update_parameter_temp==update_parameter)
-                        {
-                            m_node.deleteParam(update_param_flag);
-                        }
-                    }
-                    update_parameter.clear();
+                    state=this->InitDevice();
+                }
+                else if(update_parameter==laser_parameter_flag)
+                {
+                    state=this->SetLaserParameter();
+                }
+                else if(update_parameter==echo_number_flag)
+                {
+                    state=this->SetEchoNumberParameter();
+                }
+                else if(update_parameter==raw_data_type_flag)
+                {
+                    state=this->SetRawDataType();
+                }
+                else if(update_parameter==scan_mode_flag)
+                {
+                    state=this->SetScanMode();
+                }
+                else if(update_parameter==playback_flag)
+                {
+                    state=this->SetPlayback();
+                }
+                else if(update_parameter==view_parameter_flag)
+                {
+                    state=this->SetViewParameter();
+                }
+                else if(update_parameter==disconnect_flag)
+                {
+                    state=this->DisconnectDevice();
+                }
+                else if(update_parameter==start_device_flag)
+                {
+                    state=this->StartDevice();
+                }
+                else if(update_parameter==pause_device_flag)
+                {
+                    state=this->PauseDevice();
+                }
+                else if(update_parameter==stop_device_flag)
+                {
+                    state=this->StopDevice();
+                }
+                else if(update_parameter==exit_flag)
+                {
+                    m_running=false;
+                    state=true;
+                }
+                if (!state)
+                {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(200)); //200ms
+                }
+            } while (!state && retry-- > 0);
+
+            ROS_INFO("delete parameter:%s %d %d",update_parameter.c_str(),state,retry);
+            m_node.deleteParam(update_parameter);
+            //判断update_param参数里数据是否更新为新设置参数,更新就不删除update_param本参数
+            std::string update_parameter_temp;
+            if(m_node.getParam(update_param_flag,update_parameter_temp))
+            {
+                if(update_parameter_temp==update_parameter)
+                {
+                    m_node.deleteParam(update_param_flag);
                 }
             }
+            update_parameter.clear();
         }
     }
     void ClearParameter()
@@ -603,10 +588,9 @@ struct LidarRosDriver::Impl
         m_set_thread=std::thread([this]{
             this->m_running=true;
             ros::Rate loop_rate(10);
-            uint64_t start_time=0;
             std::string update_parameter;
             while (this->m_running) {
-                this->UpdateParameter(update_parameter,start_time);
+                this->UpdateParameter(update_parameter);
                 loop_rate.sleep();
             }
         });

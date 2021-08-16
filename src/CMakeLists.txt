@@ -48,7 +48,7 @@ catkin_package(
 #  DEPENDS
 )
 
-set(PARAMETER_FLAG_INCLUDE "${CMAKE_SOURCE_DIR}/parameter_flag")
+set(PARAMETER_FLAG_INCLUDE "${CMAKE_SOURCE_DIR}/lidar_ros_driver")
 ###########
 ## Build ##
 ###########

@@ -27,7 +27,6 @@ int main(int argc, char** argv)
         ros::spinOnce();
         loop_rate.sleep();
     }
-    //ROS_INFO("tuichu lidar_ros_driver");
     dvr.Stop();
     return 0;
 }

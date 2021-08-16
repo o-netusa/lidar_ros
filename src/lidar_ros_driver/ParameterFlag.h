@@ -8,6 +8,7 @@
 
 #pragma once
 #include <string>
+static std::string pointcloud_msgs="point_cloud";
 static std::string param_msgs="param_msgs";
 static std::string connect_flag="connect";
 static std::string init_device_flag="init_device";
