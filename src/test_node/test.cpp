@@ -26,7 +26,7 @@ static std::string title =
 
 void PointCloudCallback(const sensor_msgs::PointCloud::ConstPtr &msg)
 {
-    ROS_INFO("PointCloud Size:%u\n",msg->points.size());
+    ROS_INFO("PointCloud Size:%d\n",static_cast<int>(msg->points.size()));
 }
 void ParamCallback(const common_msgs::ParameterMsg::ConstPtr &msg)
 {

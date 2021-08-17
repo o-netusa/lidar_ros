@@ -41,7 +41,6 @@ public:
             return;
         }
         cppbase::Timer<cppbase::us> timer;
-        timer.Start();
         sensor_msgs::PointCloud pointcloud;
         pointcloud.header.stamp = ros::Time::now();
         pointcloud.header.frame_id = "sensor_frame";
@@ -58,7 +57,7 @@ public:
             pointcloud.points[i].y = pt[1];
             pointcloud.points[i].z = pt[2];
         }
-        ROS_INFO("end time:%d us", timer.Elapsed());
+        ROS_INFO("end time:%d us", static_cast<int>(timer.Elapsed()));
         timer.Stop();
         m_cloud_pub->publish(pointcloud);
     }
