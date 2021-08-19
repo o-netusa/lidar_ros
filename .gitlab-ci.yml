@@ -23,5 +23,8 @@ build_linux:
   script:
     - rm -rf build devel
     - catkin_make
+    - roscore &
+    - roscore_pid=$!
     - catkin_make run_tests
+    - kill $roscore_pid
 
