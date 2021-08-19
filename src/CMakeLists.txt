@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 
-project(lidar_ros_driver CXX)
+project(lidar_ros_driver VERSION 1.0 LANGUAGES CXX)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -58,9 +58,12 @@ include_directories(
   ${PARAMETER_FLAG_INCLUDE}
 )
 
-add_subdirectory(lidar_ros_driver)
 add_subdirectory(test_node)
-add_subdirectory(tests)
+add_subdirectory(lidar_ros_driver)
+if(CATKIN_ENABLE_TESTING)
+    enable_testing()
+    add_subdirectory(tests)
+endif(CATKIN_ENABLE_TESTING)
 
 include(ClangFormat)
 clang_format_recurse("lidar_ros_driver" "test_node" "tests")
@@ -69,6 +72,13 @@ clang_format_recurse("lidar_ros_driver" "test_node" "tests")
 #############
 ## Install ##
 #############
+include(InstallRequiredSystemLibraries)
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
+set(CPACK_PACKAGE_VERSION_MAJOR "${lidar_ros_driver_VERSION_MAJOR}")
+set(CPACK_PACKAGE_VERSION_MINOR "${lidar_ros_driver_VERSION_MINOR}")
+set(CPACK_PACKAGE_VENDOR "ONET")
+
+
 
 #############
 ## Testing ##

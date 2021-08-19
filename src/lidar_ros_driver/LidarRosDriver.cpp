@@ -395,7 +395,7 @@ struct LidarRosDriver::Impl
                 {
                     if(m_playback_device)
                     {
-                        if(!m_playback_device->Start(m_viewcallback,option))
+                        if(!m_playback_device->Start(m_viewcallback))
                         {
                             ROS_ERROR("Error:Playback failed.");
                             SendParameterState(start_device_flag,false,"Playback failed.");

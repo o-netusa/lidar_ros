@@ -2,12 +2,14 @@
 #include <gtest/gtest.h>
 #include "../lidar_ros_driver/LidarRosDriver.h"
 
-
 TEST(LidarRosDriver, LidarRosDriver)
 {    
     ros::NodeHandle node;
     onet::lidar_ros::LidarRosDriver dvr(node);
     dvr.Start();
+    ros::Rate loop_rate(100);
+    ros::spinOnce();
+    loop_rate.sleep();
     EXPECT_TRUE(dvr.IsRunning());
     dvr.Stop();
     EXPECT_FALSE(dvr.IsRunning());
@@ -15,7 +17,8 @@ TEST(LidarRosDriver, LidarRosDriver)
 
 int main(int argc, char **argv)
 {
-    ::testing::InitGoogleTest(&argc, argv);
     ros::init(argc, argv, "tests");
+    ::testing::InitGoogleTest(&argc, argv);
+
     return RUN_ALL_TESTS();
 }
