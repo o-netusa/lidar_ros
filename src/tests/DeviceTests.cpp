@@ -1,6 +1,12 @@
 #include <ros/ros.h>
 #include <gtest/gtest.h>
+#include <XmlRpcValue.h>
+#include <thread>
+#include <common_msgs/ParameterMsg.h>
+#include <ParameterFlag.h>
+#include <sensor_msgs/PointCloud.h>
 #include "../lidar_ros_driver/LidarRosDriver.h"
+
 
 TEST(LidarRosDriver, LidarRosDriver)
 {    

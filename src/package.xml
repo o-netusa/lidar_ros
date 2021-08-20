@@ -13,17 +13,13 @@
   <build_depend>std_msgs</build_depend>
   <build_depend>message_generation</build_depend>
   <build_depend>common_msgs</build_depend>
-  <!--build_depend>gtrostestest</build_depend-->
   <build_depend>gtest</build_depend>
-  <!--build_depend>rostest</build_depend-->
   <build_export_depend>gtest</build_export_depend>
-  <!--build_export_depend>rostest</build_export_depend-->
   <exec_depend>roscpp</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>
   <exec_depend>std_msgs</exec_depend>
   <exec_depend>message_runtime</exec_depend>
   <exec_depend>common_msgs</exec_depend>
-  <!--exec_depend>rostest</exec_depend-->
   <exec_depend>gtest</exec_depend>
   <test_depend>rosunit</test_depend>
 </package>
