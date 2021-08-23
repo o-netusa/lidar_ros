@@ -106,11 +106,11 @@ struct LidarRosDriver::Impl
     ros::ServiceServer m_start_device_service;  //start_device参数设置状态
     ros::ServiceServer m_laser_param_service;  //start_device参数设置状态
     ros::ServiceServer m_echo_param_service;  //start_device参数设置状态
-    ros::ServiceServer m_raw_data_type_service;  //start_device参数设置状态
-    ros::ServiceServer m_scan_mode_service;  //start_device参数设置状态
-    ros::ServiceServer m_view_param_service;  //start_device参数设置状态
+    ros::ServiceServer m_raw_data_type_service;  //raw_data_type参数设置状态
+    ros::ServiceServer m_scan_mode_service;  //scan_mode参数设置状态
+    ros::ServiceServer m_view_param_service;  //view_param参数设置状态
 
-    ros::ServiceServer m_playback_service;  //start_playback参数设置状态
+    ros::ServiceServer m_playback_service;  //playbackk参数设置状态
     ros::ServiceServer m_start_playback_service;  //start_playback参数设置状态
     ros::ServiceServer m_pause_playback_service;  //pause_playback参数设置状态
 
