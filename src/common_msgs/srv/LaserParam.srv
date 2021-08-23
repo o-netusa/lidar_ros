@@ -1,0 +1,6 @@
+int64   level
+int64   factor
+int64   pulse_width
+---
+bool   success
+

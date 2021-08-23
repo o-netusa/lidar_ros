@@ -24,6 +24,7 @@
 
 #include <common_msgs/ParameterMsg.h>
 #include <common_msgs/ServiceParam.h>
+#include <common_msgs/ConnectParam.h>
 
 namespace onet { namespace lidar_ros {
 
@@ -99,6 +100,23 @@ struct LidarRosDriver::Impl
     ros::NodeHandle m_node;      //节点
     ros::Publisher m_cloud_pub;  //点云发布者
     ros::Publisher m_param_pub;  //参数设置状态发布者
+    ros::ServiceServer m_connect_service;  //connect参数设置状态
+    ros::ServiceServer m_disconnect_service;  //disconnect参数设置状态
+    ros::ServiceServer m_init_device_service;  //init_device参数设置状态
+    ros::ServiceServer m_start_device_service;  //start_device参数设置状态
+    ros::ServiceServer m_laser_param_service;  //start_device参数设置状态
+    ros::ServiceServer m_echo_param_service;  //start_device参数设置状态
+    ros::ServiceServer m_raw_data_type_service;  //start_device参数设置状态
+    ros::ServiceServer m_scan_mode_service;  //start_device参数设置状态
+    ros::ServiceServer m_view_param_service;  //start_device参数设置状态
+
+    ros::ServiceServer m_playback_service;  //start_playback参数设置状态
+    ros::ServiceServer m_start_playback_service;  //start_playback参数设置状态
+    ros::ServiceServer m_pause_playback_service;  //pause_playback参数设置状态
+
+    ros::ServiceServer m_stop_service;  //stop参数设置状态
+    ros::ServiceServer m_exit_service;  //exit参数设置状态
+
     std::shared_ptr<ViewerCallback> m_viewcallback{nullptr};
     lidar::LidarDevice *m_lidar_device{nullptr};
     lidar::PlaybackDevice *m_playback_device{nullptr};
@@ -110,6 +128,8 @@ struct LidarRosDriver::Impl
         m_viewcallback=std::make_shared<ViewerCallback>();
         m_viewcallback->SetPublisher(&m_cloud_pub);
         onet::lidar::config::Deserialize(m_dev_param, param_file);
+        m_connect_service=m_node.advertiseService(connect_flag,&LidarRosDriver::Impl::ConnectDevice,this);
+        //m_init_device_service=m_node.advertiseService(init_device_flag,&LidarRosDriver::Impl::InitDevice,this);
         ClearParameter();
     }
     void SendParameterState(std::string parameter_flag,bool state,std::string error_info)
@@ -120,61 +140,36 @@ struct LidarRosDriver::Impl
         msgs.error=error_info;
         m_param_pub.publish(msgs);
     }
-    bool ConnectDevice()
+    bool ConnectDevice(common_msgs::ConnectParam::Request &req,
+                       common_msgs::ConnectParam::Response &res)
     {
-        bool state=false;
-        int port;
-        std::string ip;
-        try
+        int port=req.port;
+        std::string ip=req.ip;
+        if(m_lidar_device && m_lidar_device->Stop())
         {
-            XmlRpc::XmlRpcValue connect_xml;
-            if(m_node.getParam(connect_flag,connect_xml))
-            {
-                ip=static_cast<std::string>(connect_xml["ip"]);
-                port=static_cast<int>(connect_xml["port"]);
-                ROS_INFO("ip:%s port:%d\n",ip.c_str(),port);
-                state=true;
-            }
+            m_lidar_device=nullptr;
         }
-        catch (ros::Exception &e)
-        {
-            ROS_ERROR("Error:%s",e.what());
-            SendParameterState(connect_flag,false,std::string(e.what()));
-            return state;
-        }
-        if(state)
-        {
-            if(m_lidar_device && m_lidar_device->Stop())
-            {
-                m_lidar_device=nullptr;
-            }
-            m_lidar_device=GetLidarDevice(ip,port);
-            if(m_lidar_device)
-            {
-                SendParameterState(connect_flag,true,"");
-            }
-            else
-            {
-                SendParameterState(connect_flag,false,"connect failed!");
-            }
-        }
-        return state;
-    }
-    bool InitDevice()
-    {
-        if(!m_lidar_device) return false;
-        try
-        {
-            m_lidar_device->Init();
-            SendParameterState(init_device_flag,true,"");
-        }
-        catch(std::exception &e)
-        {
-            ROS_ERROR("Error:%s",e.what());
-            SendParameterState(init_device_flag,false,std::string(e.what()));
-        }
+        m_lidar_device=GetLidarDevice(ip,port);
+        res.success=m_lidar_device?true:false;
         return true;
     }
+
+    //bool InitDevice(common_msgs::InitDeviceParam::Request &req,
+    //                common_msgs::InitDeviceParam::Response &res)
+    //{
+    //    if(!m_lidar_device) return false;
+    //    try
+    //    {
+    //        m_lidar_device->Init();
+    //        SendParameterState(init_device_flag,true,"");
+    //    }
+    //    catch(std::exception &e)
+    //    {
+    //        ROS_ERROR("Error:%s",e.what());
+    //        SendParameterState(init_device_flag,false,std::string(e.what()));
+    //    }
+    //    return true;
+    //}
 
     bool DisconnectDevice()
     {

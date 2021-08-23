@@ -13,7 +13,19 @@ add_message_files(
 add_service_files(
     DIRECTORY srv
     FILES
-    ServiceParam.srv
+    ConnectParam.srv
+    DisconnectParam.srv
+    EchoNumberParam.srv
+    ExitParam.srv
+    InitDeviceParam.srv
+    LaserParam.srv
+    PauseParam.srv
+    PlaybackParam.srv
+    RawDataTypeParam.srv
+    ScanModeParam.srv
+    StartDeviceParam.srv
+    StopParam.srv
+    ViewParam.srv
     )
 generate_messages(
     DEPENDENCIES
