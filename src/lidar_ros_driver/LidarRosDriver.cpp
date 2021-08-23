@@ -23,6 +23,7 @@
 #include <thread>
 
 #include <common_msgs/ParameterMsg.h>
+#include <common_msgs/ServiceParam.h>
 
 namespace onet { namespace lidar_ros {
 

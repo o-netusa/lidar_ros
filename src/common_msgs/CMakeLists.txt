@@ -10,6 +10,11 @@ add_message_files(
    FILES
    ParameterMsg.msg
  )
+add_service_files(
+    DIRECTORY srv
+    FILES
+    ServiceParam.srv
+    )
 generate_messages(
     DEPENDENCIES
       std_msgs
