@@ -20,7 +20,10 @@ static std::string playback_flag="playback";
 static std::string view_parameter_flag="view_parameter";
 static std::string disconnect_flag="disconnect";
 static std::string start_device_flag="start_device";
-static std::string pause_device_flag="pause_device";
+static std::string start_playback_flag="start_playback";
+static std::string pause_playback_flag="pause_playback";
 static std::string stop_device_flag="stop_device";
 static std::string exit_flag="exit_exec";
 static std::string update_param_flag="update_device_parameter";
+
+static std::string service_param_flag="ServiceParam";

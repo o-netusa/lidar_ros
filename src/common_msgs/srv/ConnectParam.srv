@@ -1,5 +1,0 @@
-string ip
-int64  port
----
-bool   success
-

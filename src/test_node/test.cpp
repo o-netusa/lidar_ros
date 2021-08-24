@@ -7,6 +7,8 @@
 #include <XmlRpcValue.h>
 #include <ParameterFlag.h>
 #include <common_msgs/ParameterMsg.h>
+#include <common_msgs/ServiceParam.h>
+
 
 static std::string title =
     "\n*********************************\n"
@@ -20,8 +22,9 @@ static std::string title =
     "**  h.SetViewSpeed              \n"
     "**  i.Disconnect                \n"
     "**  j.StartDevice           	 \n"
-    "**  k.PauseDevice               \n"
-    "**  l.StopDevice                \n"
+    "**  k.StartPlayback           	 \n"
+    "**  l.PauseDevice               \n"
+    "**  m.StopDevice                \n"
     "** ****press q to quit********* **";
 
 void PointCloudCallback(const sensor_msgs::PointCloud::ConstPtr &msg)
@@ -52,6 +55,8 @@ int main(int argc, char *argv[])
     ros::NodeHandle node;
     ros::Subscriber cloud_sub=node.subscribe(pointcloud_msgs,100,PointCloudCallback);
     ros::Subscriber param_sub=node.subscribe(param_msgs,100,ParamCallback);
+    ros::service::waitForService(service_param_flag);
+    ros::ServiceClient lidar_ros_driver_client=node.serviceClient<common_msgs::ServiceParam>(service_param_flag);
     ClearParameter(node);
     ros::Rate loop_rate(1);
     std::atomic_bool flag_loop{true};
@@ -66,7 +71,6 @@ int main(int argc, char *argv[])
             {
             case 'a':
             {
-
                 std::cout << "Enter ip-address port: ";
                 std::string ip;
                 int port;
@@ -80,7 +84,27 @@ int main(int argc, char *argv[])
                 break;
             case 'b':
             {
-                node.setParam(update_param_flag,init_device_flag);
+                common_msgs::ServiceParam service_param;
+                service_param.request.type=init_device_flag;
+                service_param.request.state=true;
+                bool state=false;
+                while (!state) {
+                    state=lidar_ros_driver_client.call(service_param);
+                }
+                if(state)
+                {
+                    if(service_param.response.success)
+                    {
+                        ROS_INFO("%s:%d.",init_device_flag.c_str(),service_param.response.success);
+                    }
+                    else
+                    {
+                        ROS_INFO("%s",service_param.response.error.c_str());
+                    }
+                }else
+                {
+                    ROS_INFO("call Failed %s:%d.",init_device_flag.c_str(),service_param.response.success);
+                }
             }
                 break;
             case 'c':
@@ -175,7 +199,21 @@ int main(int argc, char *argv[])
                 break;
             case 'i':
             {
-                node.setParam(update_param_flag,disconnect_flag);
+                common_msgs::ServiceParam service_param;
+                service_param.request.type=disconnect_flag;
+                //service_param.request.type=1;
+                service_param.request.state=true;
+                if(lidar_ros_driver_client.call(service_param))
+                {
+                    if(service_param.response.success)
+                    {
+                        ROS_INFO("%s:%d.",disconnect_flag.c_str(),service_param.response.success);
+                    }
+                    else
+                    {
+                        ROS_INFO("%s",service_param.response.error.c_str());
+                    }
+                }
             }
                 break;
             case 'j':
@@ -193,24 +231,82 @@ int main(int argc, char *argv[])
                 node.setParam(start_device_flag,option_xml);
             }
                 break;
+
             case 'k':
             {
-
-                std::cout << "Enter pause(0,1)<note:Pause can only be done on the playback>: ";
-                int pause;
-                std::cin >> pause;
-                node.setParam(update_param_flag,pause_device_flag);
-                node.setParam(pause_device_flag,pause);
+                common_msgs::ServiceParam service_param;
+                service_param.request.type=start_playback_flag;
+                //service_param.request.type=2;
+                service_param.request.state=true;
+                if(lidar_ros_driver_client.call(service_param))
+                {
+                    if(service_param.response.success)
+                    {
+                        ROS_INFO("%s:%d.",start_playback_flag.c_str(),service_param.response.success);
+                    }
+                    else
+                    {
+                        ROS_INFO("%s",service_param.response.error.c_str());
+                    }
+                }
             }
             	break;
             case 'l':
             {
-                node.setParam(update_param_flag,stop_device_flag);
+                std::cout << "Enter pause(0,1): ";
+                common_msgs::ServiceParam service_param;
+                service_param.request.type=pause_playback_flag;
+                //service_param.request.type=3;
+                std::cin >>service_param.request.state;
+                if(lidar_ros_driver_client.call(service_param))
+                {
+                    if(service_param.response.success)
+                    {
+                        ROS_INFO("%s:%d.",pause_playback_flag.c_str(),service_param.response.success);
+                    }
+                    else
+                    {
+                        ROS_INFO("%s",service_param.response.error.c_str());
+                    }
+                }
             }
             	break;
+            case 'm':
+            {
+                common_msgs::ServiceParam service_param;
+                service_param.request.type=stop_device_flag;
+                //service_param.request.type=4;
+                service_param.request.state=true;
+                if(lidar_ros_driver_client.call(service_param))
+                {
+                    if(service_param.response.success)
+                    {
+                        ROS_INFO("%s:%d.",stop_device_flag.c_str(),service_param.response.success);
+                    }
+                    else
+                    {
+                        ROS_INFO("%s",service_param.response.error.c_str());
+                    }
+                }
+            }
+                break;
             case 'q':
             {
-                node.setParam(update_param_flag,exit_flag);
+                common_msgs::ServiceParam service_param;
+                service_param.request.type=exit_flag;
+                //service_param.request.type=5;
+                service_param.request.state=true;
+                if(lidar_ros_driver_client.call(service_param))
+                {
+                    if(service_param.response.success)
+                    {
+                        ROS_INFO("%s:%d.",exit_flag.c_str(),service_param.response.success);
+                    }
+                    else
+                    {
+                        ROS_INFO("%s",service_param.response.error.c_str());
+                    }
+                }
                 flag_loop=false;
             }
                 break;

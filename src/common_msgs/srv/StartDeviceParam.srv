@@ -1,9 +1,0 @@
-string param_type
-bool   saveable
-int64  folder_rule
-string path
-bool   pause
-string ip
-int64  port
-
-
