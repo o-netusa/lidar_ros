@@ -13,6 +13,21 @@ stages:
   - build
   - test
 
+nightly_linux:
+  image: ros:noetic-perception-focal
+  only:
+    - schedules
+  tags:
+    - ros
+  stage: build
+  script:
+    - rm -rf build devel
+    - catkin_make
+    - roscore &
+    - roscore_pid=$!
+    - catkin_make run_tests
+    - kill $roscore_pid
+
 build_linux:
   image: ros:noetic-perception-focal
   rules:
