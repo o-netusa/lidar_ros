@@ -1,23 +1,30 @@
-#include <ros/ros.h>
-#include <gtest/gtest.h>
-#include <XmlRpcValue.h>
-#include <thread>
-#include <common_msgs/ParameterMsg.h>
-#include <ParameterFlag.h>
-#include <sensor_msgs/PointCloud.h>
-#include "../lidar_ros_driver/LidarRosDriver.h"
+/**************************************************************************
+ * @file: DeviceTests.cpp
+ * @brief:
+ *
+ * Copyright (c) 2021 O-Net Technologies (Group) Limited.
+ * All rights reserved.
+ *************************************************************************/
 
+#include <ParameterFlag.h>
+#include <XmlRpcValue.h>
+#include <ros/ros.h>
+#include <sensor_msgs/PointCloud.h>
+
+#include <common_msgs/ParameterMsg.h>
+#include <lidar_ros_driver/LidarRosDriver.h>
+
+#include <gtest/gtest.h>
+#include <thread>
 
 TEST(LidarRosDriver, LidarRosDriver)
-{    
+{
     ros::NodeHandle node;
     onet::lidar_ros::LidarRosDriver dvr(node);
-    dvr.Start();
     ros::Rate loop_rate(100);
     ros::spinOnce();
     loop_rate.sleep();
     EXPECT_TRUE(dvr.IsRunning());
-    dvr.Stop();
     EXPECT_FALSE(dvr.IsRunning());
 }
 

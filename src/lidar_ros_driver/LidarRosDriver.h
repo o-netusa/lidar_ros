@@ -1,6 +1,6 @@
 
 /**************************************************************************
- * @file: RosServer.h
+ * @file: LidarRosDriver.h
  * @brief:
  *
  * Copyright (c) 2021 O-Net Technologies (Group) Limited.
@@ -20,10 +20,8 @@ class LidarRosDriver
 public:
     LidarRosDriver(ros::NodeHandle node);
     ~LidarRosDriver() = default;
-
-    void Start();
-    void Stop();
     bool IsRunning() const;
+    void UpdateParameter();
 
 private:
     struct Impl;
