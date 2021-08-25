@@ -13,7 +13,7 @@ add_message_files(
 add_service_files(
     DIRECTORY srv
     FILES
-    ServiceParam.srv
+    LidarRosService.srv
     )
 generate_messages(
     DEPENDENCIES

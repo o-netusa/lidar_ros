@@ -1,5 +1,5 @@
 /**************************************************************************
- * @file: LidarNode.cpp
+ * @file: LidarRosNode.cpp
  * @brief:
  *
  * Copyright (c) 2021 O-Net Technologies (Group) Limited.

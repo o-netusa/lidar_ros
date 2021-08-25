@@ -1,6 +1,5 @@
 bool   state
-string  type
+string type
 ---
 bool   success
 string error
-
