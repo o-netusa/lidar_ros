@@ -53,11 +53,11 @@ int main(int argc, char *argv[])
 {
     ros::init(argc,argv,"test_node");
     ros::NodeHandle node;
+    ClearParameter(node);
     ros::Subscriber cloud_sub=node.subscribe(pointcloud_msgs,100,PointCloudCallback);
     ros::Subscriber param_sub=node.subscribe(param_msgs,100,ParamCallback);
     ros::service::waitForService(service_param_flag);
     ros::ServiceClient lidar_ros_driver_client=node.serviceClient<common_msgs::ServiceParam>(service_param_flag);
-    ClearParameter(node);
     ros::Rate loop_rate(1);
     std::atomic_bool flag_loop{true};
     auto op_future = std::async(std::launch::async, [&] {

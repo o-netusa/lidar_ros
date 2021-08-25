@@ -12,12 +12,10 @@ TEST(LidarRosDriver, LidarRosDriver)
 {    
     ros::NodeHandle node;
     onet::lidar_ros::LidarRosDriver dvr(node);
-    dvr.Start();
     ros::Rate loop_rate(100);
     ros::spinOnce();
     loop_rate.sleep();
     EXPECT_TRUE(dvr.IsRunning());
-    dvr.Stop();
     EXPECT_FALSE(dvr.IsRunning());
 }
 

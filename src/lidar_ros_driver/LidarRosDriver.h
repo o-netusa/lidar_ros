@@ -20,10 +20,8 @@ class LidarRosDriver
 public:
     LidarRosDriver(ros::NodeHandle node);
     ~LidarRosDriver() = default;
-
-    void Start();
-    void Stop();
     bool IsRunning() const;
+    void UpdateParameter();
 
 private:
     struct Impl;

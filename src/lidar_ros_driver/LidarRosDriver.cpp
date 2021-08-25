@@ -93,9 +93,9 @@ onet::lidar::LidarDevice *GetLidarDevice(const std::string &strIP, int port)
 
 struct LidarRosDriver::Impl
 {
-    bool m_running{false};
+    bool m_running{true};
     bool m_playback{false};
-    std::thread m_set_thread;
+    std::string m_update_parameter;
     ros::NodeHandle m_node;      //节点
     ros::Publisher m_cloud_pub;  //点云发布者
     ros::Publisher m_param_pub;  //参数设置状态发布者
@@ -107,13 +107,13 @@ struct LidarRosDriver::Impl
     std::shared_ptr<onet::lidar::DlphDeviceParameter> m_dev_param;
     Impl(ros::NodeHandle node) : m_node(node)
     {
+        ClearParameter();
         m_cloud_pub=m_node.advertise<sensor_msgs::PointCloud>(pointcloud_msgs,100);
         m_param_pub=m_node.advertise<common_msgs::ParameterMsg>(param_msgs,100);
         m_viewcallback=std::make_shared<ViewerCallback>();
         m_viewcallback->SetPublisher(&m_cloud_pub);
         onet::lidar::config::Deserialize(m_dev_param, param_file);
         m_service=m_node.advertiseService(service_param_flag,&LidarRosDriver::Impl::ServiceParameter,this);
-        ClearParameter();
     }
     void SendParameterState(std::string parameter_flag,bool state,std::string error_info)
     {
@@ -126,6 +126,7 @@ struct LidarRosDriver::Impl
     bool ServiceParameter(common_msgs::ServiceParam::Request &req,
                           common_msgs::ServiceParam::Response &res)
     {
+        ROS_INFO("Type:%s",req.type.c_str());
         if(req.type==init_device_flag)
         {
             return InitDevice(req,res);
@@ -154,7 +155,7 @@ struct LidarRosDriver::Impl
                 res.success=true;
                 res.error="";
             }
-            ROS_INFO("Type:%s",req.type.c_str());
+
         }
         res.success=true;
         return true;
@@ -558,49 +559,49 @@ struct LidarRosDriver::Impl
         return state;
     }
 
-    void UpdateParameter(std::string &update_parameter)
+    void UpdateParameter()
     {
         //如此编写，主要是针对多参数设置时，每个参数设置对应
-        if(update_parameter.empty())
+        if(m_update_parameter.empty())
         {
-            m_node.getParam(update_param_flag,update_parameter);
+            m_node.getParam(update_param_flag,m_update_parameter);
         }
 
-        if(!update_parameter.empty())
+        if(!m_update_parameter.empty())
         {
             bool state = false;
             int retry = 3;
             do
             {
-                if(update_parameter==connect_flag)
+                if(m_update_parameter==connect_flag)
                 {
                     state=this->ConnectDevice();
                 }
-                else if(update_parameter==laser_parameter_flag)
+                else if(m_update_parameter==laser_parameter_flag)
                 {
                     state=this->SetLaserParameter();
                 }
-                else if(update_parameter==echo_number_flag)
+                else if(m_update_parameter==echo_number_flag)
                 {
                     state=this->SetEchoNumberParameter();
                 }
-                else if(update_parameter==raw_data_type_flag)
+                else if(m_update_parameter==raw_data_type_flag)
                 {
                     state=this->SetRawDataType();
                 }
-                else if(update_parameter==scan_mode_flag)
+                else if(m_update_parameter==scan_mode_flag)
                 {
                     state=this->SetScanMode();
                 }
-                else if(update_parameter==playback_flag)
+                else if(m_update_parameter==playback_flag)
                 {
                     state=this->SetPlayback();
                 }
-                else if(update_parameter==view_parameter_flag)
+                else if(m_update_parameter==view_parameter_flag)
                 {
                     state=this->SetViewParameter();
                 }
-                else if(update_parameter==start_device_flag)
+                else if(m_update_parameter==start_device_flag)
                 {
                      state=StartDevice();
                 }
@@ -610,18 +611,18 @@ struct LidarRosDriver::Impl
                 }
             } while (!state && retry-- > 0);
 
-            ROS_INFO("delete parameter:%s %d %d",update_parameter.c_str(),state,retry);
-            m_node.deleteParam(update_parameter);
+            ROS_INFO("delete parameter:%s %d %d",m_update_parameter.c_str(),state,retry);
+            m_node.deleteParam(m_update_parameter);
             //判断update_param参数里数据是否更新为新设置参数,更新就不删除update_param本参数
             std::string update_parameter_temp;
             if(m_node.getParam(update_param_flag,update_parameter_temp))
             {
-                if(update_parameter_temp==update_parameter)
+                if(update_parameter_temp==m_update_parameter)
                 {
                     m_node.deleteParam(update_param_flag);
                 }
             }
-            update_parameter.clear();
+            m_update_parameter.clear();
         }
     }
     void ClearParameter()
@@ -636,37 +637,15 @@ struct LidarRosDriver::Impl
             m_node.deleteParam(update_param_flag);
         }
     }
-    void Start()
-    {
-        ros::start();
-        m_set_thread=std::thread([this]{
-            this->m_running=true;
-            ros::Rate loop_rate(5);
-            std::string update_parameter;
-            while (this->m_running) {
-                this->UpdateParameter(update_parameter);
-                loop_rate.sleep();
-            }
-        });
-
-    }
-    void Stop()
-    {
-        if(m_set_thread.joinable())
-        {
-            m_running=false;
-            m_set_thread.join();
-        }
-    }
 };
 
 LidarRosDriver::LidarRosDriver(ros::NodeHandle node)
     : m_impl(std::make_shared<LidarRosDriver::Impl>(node))
 {}
 
-void LidarRosDriver::Start()
+void LidarRosDriver::UpdateParameter()
 {
-    m_impl->Start();
+    m_impl->UpdateParameter();
 }
 
 bool LidarRosDriver::IsRunning() const
@@ -674,9 +653,5 @@ bool LidarRosDriver::IsRunning() const
     return m_impl->m_running;
 }
 
-void LidarRosDriver::Stop()
-{
-    m_impl->Stop();
-}
 
 }}  // namespace onet::lidar_ros

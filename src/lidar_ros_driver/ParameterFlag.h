@@ -26,4 +26,4 @@ static std::string stop_device_flag="stop_device";
 static std::string exit_flag="exit_exec";
 static std::string update_param_flag="update_device_parameter";
 
-static std::string service_param_flag="ServiceParam";
+static std::string service_param_flag="/lidar_ros_driver";

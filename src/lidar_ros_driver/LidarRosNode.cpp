@@ -15,7 +15,6 @@ int main(int argc, char** argv)
     ros::init(argc, argv, "onet_lidar_node");
     ros::NodeHandle node;
     onet::lidar_ros::LidarRosDriver dvr(node);
-    dvr.Start();
     ros::Rate loop_rate(100);
     while (ros::ok())
     {
@@ -23,10 +22,9 @@ int main(int argc, char** argv)
         bool ret = dvr.IsRunning();
         if (!ret)
             break;
-
+        dvr.UpdateParameter();
         ros::spinOnce();
         loop_rate.sleep();
     }
-    dvr.Stop();
     return 0;
 }
