@@ -84,10 +84,9 @@ struct LidarRosDriver::Impl
         };
     }
 
-    void HandlePointCloud(uint32_t frame_id, lidar::PointCloud<onet::lidar::PointXYZI> cloud,
-                          [[maybe_unused]] const std::string &file_name = {})
+    void HandlePointCloud(uint32_t frame_id, lidar::PointCloud<onet::lidar::PointXYZI> cloud)
     {
-        if (!cloud.size())
+        if (cloud.empty())
         {
             return;
         }
