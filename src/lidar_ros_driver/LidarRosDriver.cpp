@@ -32,42 +32,6 @@ static auto param_file =
     (fs::path(cppbase::filesystem::GetConfigDir()) / onet::lidar::LIDAR_CHECK_FILE)
         .string();  // default param file
 
-class ViewerCallback : public onet::lidar::DeviceCallback
-{
-public:
-    void SetPublisher(ros::Publisher *cloud_pub) { m_cloud_pub = cloud_pub; }
-    void HandlePointCloud(uint32_t frame_id, std::shared_ptr<onet::lidar::PointCloud> cloud,
-                          [[maybe_unused]] const std::string &file_name = {})
-    {
-        if (!cloud || m_cloud_pub == nullptr)
-        {
-            return;
-        }
-        cppbase::Timer<cppbase::us> timer;
-        sensor_msgs::PointCloud pointcloud;
-        pointcloud.header.stamp = ros::Time::now();
-        pointcloud.header.frame_id = "sensor_frame";
-        pointcloud.points.resize(cloud->size());
-        pointcloud.channels.resize(2);
-        pointcloud.channels[0].name = "intensities";
-        pointcloud.channels[0].values.resize(cloud->size());
-        pointcloud.channels[1].name = "rgb";
-        pointcloud.channels[1].values.resize(cloud->size());
-        for (size_t i = 0; i < cloud->size(); i++)
-        {
-            const auto &pt = cloud->at(i);
-            pointcloud.points[i].x = pt[0];
-            pointcloud.points[i].y = pt[1];
-            pointcloud.points[i].z = pt[2];
-        }
-        ROS_INFO("end time:%d us", static_cast<int>(timer.Elapsed()));
-        timer.Stop();
-        m_cloud_pub->publish(pointcloud);
-    }
-    void PlaybackDone() {}
-
-    ros::Publisher *m_cloud_pub{nullptr};
-};
 
 onet::lidar::PlaybackDevice *GetPlaybackDevice(const std::vector<std::string> &file_list)
 {
@@ -102,8 +66,8 @@ struct LidarRosDriver::Impl
     ros::Publisher m_cloud_pub;    //点云发布者
     ros::Publisher m_param_pub;    //参数设置状态发布者
     ros::ServiceServer m_service;  // connect参数设置状态
+    std::function<void(uint32_t, onet::lidar::PointCloud<onet::lidar::PointXYZI> &)> m_callback{nullptr};
 
-    std::shared_ptr<ViewerCallback> m_viewcallback{nullptr};
     lidar::LidarDevice *m_lidar_device{nullptr};
     lidar::PlaybackDevice *m_playback_device{nullptr};
     std::shared_ptr<onet::lidar::DlphDeviceParameter> m_dev_param;
@@ -112,12 +76,42 @@ struct LidarRosDriver::Impl
         ClearParameter();
         m_cloud_pub = m_node.advertise<sensor_msgs::PointCloud>(pointcloud_msgs, 100);
         m_param_pub = m_node.advertise<common_msgs::ParameterMsg>(param_msgs, 100);
-        m_viewcallback = std::make_shared<ViewerCallback>();
-        m_viewcallback->SetPublisher(&m_cloud_pub);
         onet::lidar::config::Deserialize(m_dev_param, param_file);
         m_service = m_node.advertiseService(service_param_flag,
                                             &LidarRosDriver::Impl::HandlerServiceRequest, this);
+        m_callback=[this](uint32_t frame_id, lidar::PointCloud<lidar::PointXYZI>& cloud) {
+            HandlePointCloud(frame_id, cloud);
+        };
     }
+
+    void HandlePointCloud(uint32_t frame_id, lidar::PointCloud<onet::lidar::PointXYZI> cloud)
+    {
+        if (cloud.empty())
+        {
+            return;
+        }
+        cppbase::Timer<cppbase::us> timer;
+        sensor_msgs::PointCloud pointcloud;
+        pointcloud.header.stamp = ros::Time::now();
+        pointcloud.header.frame_id = "sensor_frame";
+        pointcloud.points.resize(cloud.size());
+        pointcloud.channels.resize(2);
+        pointcloud.channels[0].name = "intensities";
+        pointcloud.channels[0].values.resize(cloud.size());
+        pointcloud.channels[1].name = "rgb";
+        pointcloud.channels[1].values.resize(cloud.size());
+        for (size_t i = 0; i < cloud.size(); i++)
+        {
+            const auto &pt = cloud.at(i);
+            pointcloud.points[i].x = pt[0];
+            pointcloud.points[i].y = pt[1];
+            pointcloud.points[i].z = pt[2];
+        }
+        ROS_INFO("end time:%d us", static_cast<int>(timer.Elapsed()));
+        timer.Stop();
+        m_cloud_pub.publish(pointcloud);
+    }
+
     void SendParameterState(std::string parameter_flag, bool state, std::string error_info)
     {
         common_msgs::ParameterMsg msgs;
@@ -215,7 +209,8 @@ struct LidarRosDriver::Impl
             {
                 if (m_playback_device)
                 {
-                    if (!m_playback_device->Start(m_viewcallback))
+                    m_playback_device->RegisterPointCloudCallback(m_callback);
+                    if (!m_playback_device->Start())
                     {
                         ROS_ERROR("Error:Playback failed.");
                         res.success = false;
@@ -489,22 +484,10 @@ struct LidarRosDriver::Impl
             m_playback_device = GetPlaybackDevice(files);
             if (m_playback_device)
             {
-                m_viewcallback->DisconnectAll();
                 m_playback_device->SetParameter(m_dev_param);
                 m_playback_device->Init();
                 SendParameterState(playback_flag, true, "");
                 m_playback = true;
-                m_viewcallback->per_frame_signal.connect(
-                    [&](uint32_t, std::shared_ptr<onet::lidar::PointCloud>,
-                        const std::string &file_name) {
-                        //文件回放，文件列表滚动
-                    });
-                m_viewcallback->play_done_signal.connect([&]() {
-                    if (m_playback_device && !m_playback_device->IsStarted())
-                    {
-                        //文件回放，播放状态
-                    }
-                });
             } else
             {
                 SendParameterState(playback_flag, false, "create playback device failed");
@@ -526,13 +509,15 @@ struct LidarRosDriver::Impl
                 int rule = static_cast<int>(option_xml["folder_rule"]);
                 std::string path = static_cast<std::string>(option_xml["path"]);
                 ROS_INFO("savable:%d folder_rule:%d path:%s.", saveable, rule, path.c_str());
-                lidar::WriteRawDataOption option(saveable,
-                                                 (lidar::WriteRawDataOption::FolderRule)rule, path);
+                onet::lidar::RawDataSavingConfig config(saveable,(lidar::RawDataSavingConfig::FolderRule)rule, path);
+
                 if (!m_playback)
                 {
                     if (m_lidar_device)
                     {
-                        if (!m_lidar_device->Start(m_viewcallback, option))
+                        m_lidar_device->SetRawDataSavingConfig(config);
+                        m_lidar_device->RegisterPointCloudCallback(m_callback);
+                        if (!m_lidar_device->Start())
                         {
                             ROS_ERROR("Error:Failed to start scanning on the LiDAR sensor.");
                             SendParameterState(start_device_flag, false,
