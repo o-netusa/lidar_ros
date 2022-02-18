@@ -76,6 +76,8 @@ struct LidarRosDriver::Impl
 
     std::function<void(uint32_t, onet::lidar::PointCloud<onet::lidar::PointXYZI> &)> m_callback{
         nullptr};
+    std::function<void(uint32_t, onet::lidar::PointCloud<onet::lidar::PointXYZI> &)> m_callback2{
+        nullptr};
 
     lidar::LidarDevice *m_lidar_device{nullptr};
     lidar::PlaybackDevice *m_playback_device{nullptr};
@@ -99,6 +101,17 @@ struct LidarRosDriver::Impl
         m_callback = [this](uint32_t frame_id, lidar::PointCloud<lidar::PointXYZI> &cloud) {
             HandlePointCloud(frame_id, cloud);
         };
+        m_callback2 = [this](uint32_t frame_id, lidar::PointCloud<lidar::PointXYZI> &cloud) {
+            HandlePointCloud2(frame_id, cloud);
+        };
+    }
+    void HandlePointCloud2(uint32_t frame_id, lidar::PointCloud<onet::lidar::PointXYZI> cloud)
+    {
+        if (cloud.empty())
+        {
+            return;
+        }
+        std::cout << "receive cloud" <<std::endl;
     }
 
     void HandlePointCloud(uint32_t frame_id, lidar::PointCloud<onet::lidar::PointXYZI> cloud)
@@ -139,7 +152,28 @@ struct LidarRosDriver::Impl
     }
 
     // TODO
-    void Run() {}
+    void Run()
+    {
+   
+        int port;
+        std::string ip;
+        
+        
+        m_lidar_device = GetLidarDevice(ip, port);
+        m_lidar_device->Init();
+
+        bool saveable = false;
+        int rule = 0;
+        std::string path = "/home/Data/";
+        onet::lidar::RawDataSavingConfig config(
+                    saveable, (lidar::RawDataSavingConfig::FolderRule)rule, path);
+                    
+        m_lidar_device->SetRawDataSavingConfig(config);
+        m_lidar_device->RegisterPointCloudCallback(m_callback2);
+        m_lidar_device->Start();
+        m_lidar_device->Stop();
+
+    }
     bool HandlerServiceRequest(common_msgs::LidarRosService::Request &req,
                                common_msgs::LidarRosService::Response &res)
     {
