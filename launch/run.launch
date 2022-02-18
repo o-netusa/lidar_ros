@@ -3,12 +3,15 @@
     <arg name="frame_id" default="lidar" />
     <arg name="device_ip" default="000.000.00.00" />
     <arg name="port" default="123" />
-    <arg name="lidar_check_parameter_path" default="$(find lidar_ros_driver)/config/LidarCheckParameter.xml" />
-
-    <node  pkg="lidar_ros_driver" type="lidar_ros_driver" name="lidar_ros_driver_node" output="screen" respawn="true"/>
+    <arg name="lidar_check_parameter_path" default="$(find lidar_ros_driver)/../config/LidarCheckParameter.xml" />
+    <arg name="lidar_parameter_path" default="$(find lidar_ros_driver)/../config/LidarParameter.xml" />
+    <arg name="playback_file_path" default="" />
+    <node  pkg="lidar_ros_driver" type="lidar_ros_driver" name="lidar_ros_driver_node" output="screen" respawn="false"/>
         <param name="point_cloud_topic_name" type="string" value="$(arg point_cloud_topic_name)" />
         <param name="frame_id" type="string" value="$(arg frame_id)" />
         <param name="device_ip" type="string" value="$(arg device_ip)" />
         <param name="port" type="int" value="$(arg port)" />
         <param name="lidar_check_parameter_path" type="string" value="$(arg lidar_check_parameter_path)" />
+        <param name="lidar_parameter_path" type="string" value="$(arg lidar_parameter_path)" />
+        <param name="playback_file_path" type="string" value="$(arg playback_file_path)" />
 </launch>

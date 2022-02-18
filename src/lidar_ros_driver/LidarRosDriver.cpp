@@ -29,10 +29,14 @@
 
 namespace onet { namespace lidar_ros {
 
-// TODO: find file under config
-static auto param_file =
-    (fs::path(cppbase::filesystem::GetConfigDir()) / onet::lidar::LIDAR_CHECK_FILE)
-        .string();  // default param file
+// // TODO: find file under config
+// static auto m_check_param_file =
+//     (fs::path(cppbase::filesystem::GetConfigDir()) / onet::lidar::LIDAR_CHECK_FILE)
+//         .string();  // default param file
+
+// static auto m_lidar_param_file =
+//     (fs::path(cppbase::filesystem::GetConfigDir()) / onet::lidar::LIDAR_PARAMETER_FILE)
+//         .string();  // default param file
 
 onet::lidar::PlaybackDevice *GetPlaybackDevice(const std::vector<std::string> &file_list)
 {
@@ -73,6 +77,8 @@ struct LidarRosDriver::Impl
     std::string m_device_ip;
     std::string m_param_file;
     int m_port;
+    std::string m_playback_file_path;
+    std::string m_check_param_file, m_lidar_param_file;
 
     std::function<void(uint32_t, onet::lidar::PointCloud<onet::lidar::PointXYZI> &)> m_callback{
         nullptr};
@@ -82,36 +88,33 @@ struct LidarRosDriver::Impl
     lidar::LidarDevice *m_lidar_device{nullptr};
     lidar::PlaybackDevice *m_playback_device{nullptr};
     std::shared_ptr<onet::lidar::DlphDeviceParameter> m_dev_param;
+
     Impl(ros::NodeHandle node) : m_node(node)
     {
         ClearParameter();
-        // TODO: fetch parameters
+        // fetch parameters
         m_node.param<std::string>("point_cloud_topic_name", m_point_cloud_topic_name,
                                   "lidar_point_cloud");
         m_node.param<std::string>("device_ip", m_device_ip, "");
         m_node.param<int>("port", m_port);
-        m_node.param<std::string>("frame_id", m_frame_id);
-        m_node.param<std::string>("lidar_check_parameter_path", m_param_file);
-
+        m_node.param<std::string>("frame_id", m_frame_id, "");
+        // TODO: update the path later
+        m_node.param<std::string>("lidar_check_parameter_path", m_check_param_file, "");
+        m_node.param<std::string>("lidar_parameter_path", m_lidar_param_file, "");
+        m_node.param<std::string>("playback_file_path", m_playback_file_path, "");
+        std::cout << m_check_param_file << " " << m_lidar_param_file << std::endl;
+        std::cout << m_device_ip << std::endl;
         m_cloud_pub = m_node.advertise<sensor_msgs::PointCloud>(m_point_cloud_topic_name, 100);
         m_param_pub = m_node.advertise<common_msgs::ParameterMsg>(param_msgs, 100);
-        onet::lidar::config::Deserialize(m_dev_param, m_param_file);
+        onet::lidar::config::Deserialize(m_dev_param, m_check_param_file);
+        onet::lidar::config::Deserialize(m_dev_param, m_lidar_param_file);
         m_service = m_node.advertiseService(service_param_flag,
                                             &LidarRosDriver::Impl::HandlerServiceRequest, this);
         m_callback = [this](uint32_t frame_id, lidar::PointCloud<lidar::PointXYZI> &cloud) {
             HandlePointCloud(frame_id, cloud);
         };
-        m_callback2 = [this](uint32_t frame_id, lidar::PointCloud<lidar::PointXYZI> &cloud) {
-            HandlePointCloud2(frame_id, cloud);
-        };
-    }
-    void HandlePointCloud2(uint32_t frame_id, lidar::PointCloud<onet::lidar::PointXYZI> cloud)
-    {
-        if (cloud.empty())
-        {
-            return;
-        }
-        std::cout << "receive cloud" <<std::endl;
+
+        Run();
     }
 
     void HandlePointCloud(uint32_t frame_id, lidar::PointCloud<onet::lidar::PointXYZI> cloud)
@@ -151,37 +154,96 @@ struct LidarRosDriver::Impl
         m_param_pub.publish(msgs);
     }
 
-    // TODO
+    // TODO: need to figure out which function only need run once
     void Run()
     {
-   
-        //int port;
-        //std::string ip;
-        //m_lidar_device = GetLidarDevice(ip, port);
-        //m_lidar_device->Init();
+        // connect device
+        // TODO: since ip is fixed, need to check if the ip and port are correct
+        if (m_lidar_device && m_lidar_device->Stop())
+        {
+            m_lidar_device = nullptr;
+        }
+        m_lidar_device = GetLidarDevice(m_device_ip, m_port);
+        if (!m_lidar_device)
+        {
+            ROS_ERROR("Error: connect failed!");
+            return;
+        }
 
-        //bool saveable = false;
-        //int rule = 0;
-        //std::string path2 = "/home/fanghaiguo/";
-        //onet::lidar::RawDataSavingConfig config(
-                   // saveable, (lidar::RawDataSavingConfig::FolderRule)rule, path2);
+        // init device
+        if (!m_lidar_device)
+        {
+            ROS_ERROR("Lidar has not been connected!");
+            return;
+        } else
+        {
+            try
+            {
+                m_lidar_device->Init();
+            } catch (std::exception &e)
+            {
+                ROS_ERROR("Error:%s", e.what());
+            }
+        }
 
-       // m_lidar_device->SetRawDataSavingConfig(config);
-       // m_lidar_device->RegisterPointCloudCallback(m_callback2);
-       // m_lidar_device->Start();
-        //m_lidar_device->Stop();
+        // set laser
+        LaserParameter laser_param = m_dev_param->lidar_param.laser;
+        m_lidar_device->SetLaser(laser_param);
+        // set echo number (need to check where the echo_number get from, LidarParameter or
+        // dev_param)
+        uint32_t echo_number = m_dev_param->lidar_param.echo_num;
+        m_lidar_device->SetEchoNumber(echo_number);
+        // set raw data type, no longer need, only have FPGA data
+        RawDataType type = m_dev_param->lidar_param.type;
+        m_lidar_device->SetRawDataType(type);
+        // set scan mode
+        ScanMode mode = ONE_WAY;  // TODO: need to find where can get teh scanmode parameter
+        m_lidar_device->SetScanMode(mode);
+        // set view parameter
+        ViewParameter viewparam = m_dev_param->lidar_param.view;
+        m_lidar_device->SetViewSpeed(viewparam);
+        // start device
+        if (!m_playback)  // play with device
+        {
+            if (m_lidar_device)
+            {
+                m_lidar_device->RegisterPointCloudCallback(m_callback);
+                if (!m_lidar_device->Start())
+                {
+                    ROS_ERROR("Error:Failed to start scanning on the LiDAR sensor.");
+                }
+            }
+        } else  // playback dp file
+        {
+            // set playback
+            if (m_playback_file_path != "")
+            {
+                std::vector<std::string> file_list{m_playback_file_path};  // will improve later
+                m_playback_device = GetPlaybackDevice(file_list);
+                if (m_playback_device)
+                {
+                    m_playback_device->SetParameter(m_dev_param);
+                    m_playback_device->Init();
+                    m_playback = true;
+                } else
+                {
+                    ROS_ERROR("create playback device failed");
+                    return;
+                }
+            }
 
-        std::vector<std::string> inputDp;
-        uint32_t m_frame_rate{10};
-        inputDp.resize(1);
-        inputDp[0] = "/home/fanghaiguo/桌面/Source49.dp";
-        m_playback_device = GetPlaybackDevice(inputDp);
-        m_playback_device->Init();
-        m_playback_device->SetFPS(m_frame_rate);
-        m_playback_device->RegisterPointCloudCallback(m_callback);
-        m_playback_device->Start();
-
+            // playback dp file
+            if (m_playback_device)
+            {
+                m_playback_device->RegisterPointCloudCallback(m_callback);
+                if (!m_playback_device->Start())
+                {
+                    ROS_ERROR("Error:Playback failed.");
+                }
+            }
+        }
     }
+
     bool HandlerServiceRequest(common_msgs::LidarRosService::Request &req,
                                common_msgs::LidarRosService::Response &res)
     {
@@ -672,7 +734,7 @@ struct LidarRosDriver::Impl
             m_node.deleteParam(update_param_flag);
         }
     }
-};
+};  // namespace lidar_ros
 
 LidarRosDriver::LidarRosDriver(ros::NodeHandle node)
     : m_impl(std::make_shared<LidarRosDriver::Impl>(node))
