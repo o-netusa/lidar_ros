@@ -22,7 +22,9 @@ int main(int argc, char** argv)
         bool ret = dvr.IsRunning();
         if (!ret)
             break;
-        dvr.UpdateParameter();
+        // dvr.UpdateParameter();
+        // Run LidarDevice
+        dvr.Run();
         ros::spinOnce();
         loop_rate.sleep();
     }

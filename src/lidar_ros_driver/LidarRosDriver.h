@@ -22,6 +22,7 @@ public:
     ~LidarRosDriver() = default;
     bool IsRunning() const;
     void UpdateParameter();
+    void Run();
 
 private:
     struct Impl;

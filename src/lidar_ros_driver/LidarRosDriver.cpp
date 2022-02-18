@@ -6,6 +6,8 @@
  * All rights reserved.
  *************************************************************************/
 
+#include "LidarRosDriver.h"
+
 #include <DeviceManager.h>
 #include <DolphinDevice.h>
 #include <LidarDevice.h>
@@ -23,15 +25,14 @@
 
 #include <thread>
 
-#include "LidarRosDriver.h"
 #include "ParameterFlag.h"
 
 namespace onet { namespace lidar_ros {
 
+// TODO: find file under config
 static auto param_file =
     (fs::path(cppbase::filesystem::GetConfigDir()) / onet::lidar::LIDAR_CHECK_FILE)
         .string();  // default param file
-
 
 onet::lidar::PlaybackDevice *GetPlaybackDevice(const std::vector<std::string> &file_list)
 {
@@ -66,7 +67,15 @@ struct LidarRosDriver::Impl
     ros::Publisher m_cloud_pub;    //点云发布者
     ros::Publisher m_param_pub;    //参数设置状态发布者
     ros::ServiceServer m_service;  // connect参数设置状态
-    std::function<void(uint32_t, onet::lidar::PointCloud<onet::lidar::PointXYZI> &)> m_callback{nullptr};
+
+    std::string m_point_cloud_topic_name;
+    std::string m_frame_id;
+    std::string m_device_ip;
+    std::string m_param_file;
+    int m_port;
+
+    std::function<void(uint32_t, onet::lidar::PointCloud<onet::lidar::PointXYZI> &)> m_callback{
+        nullptr};
 
     lidar::LidarDevice *m_lidar_device{nullptr};
     lidar::PlaybackDevice *m_playback_device{nullptr};
@@ -74,12 +83,20 @@ struct LidarRosDriver::Impl
     Impl(ros::NodeHandle node) : m_node(node)
     {
         ClearParameter();
-        m_cloud_pub = m_node.advertise<sensor_msgs::PointCloud>(pointcloud_msgs, 100);
+        // TODO: fetch parameters
+        m_node.param<std::string>("point_cloud_topic_name", m_point_cloud_topic_name,
+                                  "lidar_point_cloud");
+        m_node.param<std::string>("device_ip", m_device_ip, "");
+        m_node.param<int>("port", m_port);
+        m_node.param<std::string>("frame_id", m_frame_id);
+        m_node.param<std::string>("lidar_check_parameter_path", m_param_file);
+
+        m_cloud_pub = m_node.advertise<sensor_msgs::PointCloud>(m_point_cloud_topic_name, 100);
         m_param_pub = m_node.advertise<common_msgs::ParameterMsg>(param_msgs, 100);
-        onet::lidar::config::Deserialize(m_dev_param, param_file);
+        onet::lidar::config::Deserialize(m_dev_param, m_param_file);
         m_service = m_node.advertiseService(service_param_flag,
                                             &LidarRosDriver::Impl::HandlerServiceRequest, this);
-        m_callback=[this](uint32_t frame_id, lidar::PointCloud<lidar::PointXYZI>& cloud) {
+        m_callback = [this](uint32_t frame_id, lidar::PointCloud<lidar::PointXYZI> &cloud) {
             HandlePointCloud(frame_id, cloud);
         };
     }
@@ -93,7 +110,7 @@ struct LidarRosDriver::Impl
         cppbase::Timer<cppbase::us> timer;
         sensor_msgs::PointCloud pointcloud;
         pointcloud.header.stamp = ros::Time::now();
-        pointcloud.header.frame_id = "sensor_frame";
+        pointcloud.header.frame_id = m_frame_id;
         pointcloud.points.resize(cloud.size());
         pointcloud.channels.resize(2);
         pointcloud.channels[0].name = "intensities";
@@ -120,6 +137,9 @@ struct LidarRosDriver::Impl
         msgs.error = error_info;
         m_param_pub.publish(msgs);
     }
+
+    // TODO
+    void Run() {}
     bool HandlerServiceRequest(common_msgs::LidarRosService::Request &req,
                                common_msgs::LidarRosService::Response &res)
     {
@@ -509,7 +529,8 @@ struct LidarRosDriver::Impl
                 int rule = static_cast<int>(option_xml["folder_rule"]);
                 std::string path = static_cast<std::string>(option_xml["path"]);
                 ROS_INFO("savable:%d folder_rule:%d path:%s.", saveable, rule, path.c_str());
-                onet::lidar::RawDataSavingConfig config(saveable,(lidar::RawDataSavingConfig::FolderRule)rule, path);
+                onet::lidar::RawDataSavingConfig config(
+                    saveable, (lidar::RawDataSavingConfig::FolderRule)rule, path);
 
                 if (!m_playback)
                 {
@@ -623,6 +644,11 @@ void LidarRosDriver::UpdateParameter()
 bool LidarRosDriver::IsRunning() const
 {
     return m_impl->m_running;
+}
+
+void LidarRosDriver::Run()
+{
+    m_impl->Run();
 }
 
 }}  // namespace onet::lidar_ros

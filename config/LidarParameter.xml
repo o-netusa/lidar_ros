@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<LidarParameterInfo>
+    <ViewFieldParameter>
+        <Interval_1_step>5</Interval_1_step>
+        <Interval_2_step>15</Interval_2_step>
+        <Interval_3_step>15</Interval_3_step>
+        <Interval_4_step>5</Interval_4_step>
+        <Interval_Angle_1>-10.000</Interval_Angle_1>
+        <Interval_Angle_2>-5.000</Interval_Angle_2>
+        <Interval_Angle_3>0.000</Interval_Angle_3>
+        <Interval_Angle_4>5.000</Interval_Angle_4>
+        <Interval_Angle_5>10.000</Interval_Angle_5>
+        <FrameFrequency>10</FrameFrequency>
+    </ViewFieldParameter>
+    <LaserParameter>
+        <PowerType>4</PowerType>
+        <PowerFactorType>4</PowerFactorType>
+        <PulseWidthType>7</PulseWidthType>
+    </LaserParameter>
+    <LaserEchoNumber>
+        <EchoNumber>1</EchoNumber>
+    </LaserEchoNumber>
+    <Temprature>
+        <Value>39</Value>
+    </Temprature>
+    <SeedDac>
+        <Value>720</Value>
+    </SeedDac>
+    <TimeWin>
+        <min>170</min>
+        <max>170</max>
+    </TimeWin>
+    <DcThreshold>
+        <dc_Q>20</dc_Q>
+        <dc_I>20</dc_I>
+        <threshold>50</threshold>
+    </DcThreshold>
+    <SourceDataType>
+        <DataType>0</DataType>
+    </SourceDataType>
+</LidarParameterInfo>
