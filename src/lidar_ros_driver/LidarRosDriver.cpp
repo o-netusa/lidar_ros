@@ -155,23 +155,31 @@ struct LidarRosDriver::Impl
     void Run()
     {
    
-        int port;
-        std::string ip;
-        
-        
-        m_lidar_device = GetLidarDevice(ip, port);
-        m_lidar_device->Init();
+        //int port;
+        //std::string ip;
+        //m_lidar_device = GetLidarDevice(ip, port);
+        //m_lidar_device->Init();
 
-        bool saveable = false;
-        int rule = 0;
-        std::string path = "/home/Data/";
-        onet::lidar::RawDataSavingConfig config(
-                    saveable, (lidar::RawDataSavingConfig::FolderRule)rule, path);
-                    
-        m_lidar_device->SetRawDataSavingConfig(config);
-        m_lidar_device->RegisterPointCloudCallback(m_callback2);
-        m_lidar_device->Start();
-        m_lidar_device->Stop();
+        //bool saveable = false;
+        //int rule = 0;
+        //std::string path2 = "/home/fanghaiguo/";
+        //onet::lidar::RawDataSavingConfig config(
+                   // saveable, (lidar::RawDataSavingConfig::FolderRule)rule, path2);
+
+       // m_lidar_device->SetRawDataSavingConfig(config);
+       // m_lidar_device->RegisterPointCloudCallback(m_callback2);
+       // m_lidar_device->Start();
+        //m_lidar_device->Stop();
+
+        std::vector<std::string> inputDp;
+        uint32_t m_frame_rate{10};
+        inputDp.resize(1);
+        inputDp[0] = "/home/fanghaiguo/桌面/Source49.dp";
+        m_playback_device = GetPlaybackDevice(inputDp);
+        m_playback_device->Init();
+        m_playback_device->SetFPS(m_frame_rate);
+        m_playback_device->RegisterPointCloudCallback(m_callback);
+        m_playback_device->Start();
 
     }
     bool HandlerServiceRequest(common_msgs::LidarRosService::Request &req,
