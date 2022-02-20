@@ -70,7 +70,8 @@ struct LidarRosDriver::Impl
     std::string m_device_ip{"192.168.1.2"};
     std::string m_param_file;
     int m_port{2368};
-    std::string m_playback_file_path; // put the .dp file under testdata for testing: {"testdata/1.dp"};
+    std::string
+        m_playback_file_path;  // put the .dp file under testdata for testing: {"testdata/1.dp"};
     int m_playback_fps{10};
 
     std::function<void(uint32_t, onet::lidar::PointCloud<onet::lidar::PointXYZI> &)> m_callback{
@@ -84,13 +85,14 @@ struct LidarRosDriver::Impl
     {
         ClearParameter();
         // fetch parameters
-        m_node.param<bool>("auto_start", m_auto_start, true);
-        m_node.param<std::string>("point_cloud_topic_name", m_point_cloud_topic_name,
-                                  "lidar_point_cloud");
-        m_node.param<std::string>("device_ip", m_device_ip);
-        m_node.param<int>("port", m_port);
-        m_node.param<std::string>("frame_id", m_frame_id, "");
-        m_node.param<std::string>("playback_file_path", m_playback_file_path);
+        m_node.param<bool>("/onet_lidar_ros_driver/auto_start", m_auto_start, true);
+        m_node.param<std::string>("/onet_lidar_ros_driver/point_cloud_topic_name",
+                                  m_point_cloud_topic_name, "lidar_point_cloud");
+        m_node.param<std::string>("/onet_lidar_ros_driver/device_ip", m_device_ip, "192.168.1.2");
+        m_node.param<int>("/onet_lidar_ros_driver/port", m_port, 2368);
+        m_node.param<std::string>("/onet_lidar_ros_driver/frame_id", m_frame_id, "lidar");
+        m_node.param<std::string>("/onet_lidar_ros_driver/playback_file_path", m_playback_file_path,
+                                  "");
         m_cloud_pub = m_node.advertise<sensor_msgs::PointCloud2>(m_point_cloud_topic_name, 100);
         m_param_pub = m_node.advertise<common_msgs::ParameterMsg>(param_msgs, 100);
         m_service = m_node.advertiseService(service_param_flag,
@@ -131,7 +133,7 @@ struct LidarRosDriver::Impl
         pointcloud.header.frame_id = m_frame_id;
         pointcloud.points.resize(cloud.size());
         pointcloud.channels.resize(2);
-        pointcloud.channels[0].name = "intensities";
+        pointcloud.channels[0].name = "intensity";
         pointcloud.channels[0].values.resize(cloud.size());
         pointcloud.channels[1].name = "rgb";
         pointcloud.channels[1].values.resize(cloud.size());

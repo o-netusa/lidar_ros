@@ -1,16 +1,16 @@
 <launch>
     <arg name="point_cloud_topic_name" default="lidar_point_cloud" />
-    <arg name="frame_id" default="point_cloud" />
+    <arg name="frame_id" default="lidar" />
     <arg name="device_ip" default="192.168.1.2" />
     <arg name="port" default="2368" />
-    <arg name="playback_file_path" default="" />
+    <arg name="playback_file_path" default="$(find lidar_ros_driver)/../build/lidardevice-src/tests/test_data/Source4.dp" />
     <arg name="auto_start" default="true" />
     <node pkg="lidar_ros_driver" type="lidar_ros_driver" name="onet_lidar_ros_driver" output="screen" cwd="node" respawn="false">
-        <param name="point_cloud_topic_name" type="str" value="$(arg point_cloud_topic_name)" />
-        <param name="frame_id" type="str" value="$(arg frame_id)" />
-        <param name="device_ip" type="str" value="$(arg device_ip)" />
+        <param name="point_cloud_topic_name" type="string" value="$(arg point_cloud_topic_name)" />
+        <param name="frame_id" type="string" value="$(arg frame_id)" />
+        <param name="device_ip" type="string" value="$(arg device_ip)" />
         <param name="port" type="int" value="$(arg port)" />
-        <param name="playback_file_path" type="str" value="$(arg playback_file_path)" />
+        <param name="playback_file_path" type="string" value="$(arg playback_file_path)" />
         <param name="auto_start" type="bool" value="$(arg auto_start)" />
     </node>
 </launch>
