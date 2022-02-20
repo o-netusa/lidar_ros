@@ -14,12 +14,17 @@ stages:
   - test
 
 nightly_linux:
-  image: ros:noetic-perception-focal
+  image: onet/lidar:ros
   only:
     - schedules
   tags:
     - ros
   stage: build
+  before_script:
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
   script:
     - rm -rf build devel
     - catkin_make
@@ -29,12 +34,18 @@ nightly_linux:
     - kill $roscore_pid
 
 build_linux:
-  image: ros:noetic-perception-focal
+  image: onet/lidar:ros
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
   stage: build
   tags:
     - ros
+  before_script:
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan -t rsa -p 2222 192.168.10.1 >> ~/.ssh/known_hosts
   script:
     - rm -rf build devel
     - catkin_make

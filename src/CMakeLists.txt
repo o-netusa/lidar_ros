@@ -31,7 +31,6 @@ download_project(
 add_subdirectory(${cppbase_SOURCE_DIR} ${cppbase_BINARY_DIR})
 set(CPPBASE_INCLUDE_DIR ${cppbase_SOURCE_DIR} CACHE STRING "")
 
-set(USE_OPEN3D OFF)
 download_project(
   PROJ           lidardevice
   GIT_REPOSITORY ssh://git@192.168.10.1:2222/lidar/lidardevice
