@@ -57,8 +57,8 @@ include_directories(
   ${PARAMETER_FLAG_INCLUDE}
 )
 
-add_subdirectory(test_node)
 add_subdirectory(lidar_ros_driver)
+add_subdirectory(test_node)
 if(CATKIN_ENABLE_TESTING)
     enable_testing()
     add_subdirectory(tests)
