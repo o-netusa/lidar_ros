@@ -21,6 +21,8 @@
 #include <config/DeviceParamsConfig.h>
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud.h>
+#include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/point_cloud_conversion.h>
 #include <std_msgs/String.h>
 
 #include <thread>
@@ -104,7 +106,7 @@ struct LidarRosDriver::Impl
         m_node.param<std::string>("playback_file_path", m_playback_file_path, "");
         std::cout << m_check_param_file << " " << m_lidar_param_file << std::endl;
         std::cout << m_device_ip << std::endl;
-        m_cloud_pub = m_node.advertise<sensor_msgs::PointCloud>(m_point_cloud_topic_name, 100);
+        m_cloud_pub = m_node.advertise<sensor_msgs::PointCloud2>(m_point_cloud_topic_name, 100);
         m_param_pub = m_node.advertise<common_msgs::ParameterMsg>(param_msgs, 100);
         onet::lidar::config::Deserialize(m_dev_param, m_check_param_file);
         onet::lidar::config::Deserialize(m_dev_param, m_lidar_param_file);
@@ -142,7 +144,10 @@ struct LidarRosDriver::Impl
         }
         ROS_INFO("end time:%d us", static_cast<int>(timer.Elapsed()));
         timer.Stop();
-        m_cloud_pub.publish(pointcloud);
+        // convert pointcloud to pointcloud2
+        sensor_msgs::PointCloud2 pointcloud2;
+        convertPointCloudToPointCloud2(pointcloud, pointcloud2);
+        m_cloud_pub.publish(pointcloud2);
     }
 
     void SendParameterState(std::string parameter_flag, bool state, std::string error_info)
@@ -154,7 +159,6 @@ struct LidarRosDriver::Impl
         m_param_pub.publish(msgs);
     }
 
-    // TODO: need to figure out which function only need run once
     void Run()
     {
         // connect device
@@ -223,6 +227,7 @@ struct LidarRosDriver::Impl
                 if (m_playback_device)
                 {
                     m_playback_device->SetParameter(m_dev_param);
+                    // TODO: need to fix config files' path in Init
                     m_playback_device->Init();
                     m_playback = true;
                 } else
