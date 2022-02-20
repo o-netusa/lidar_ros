@@ -48,6 +48,7 @@ catkin_package(
 )
 
 set(PARAMETER_FLAG_INCLUDE "${CMAKE_SOURCE_DIR}/lidar_ros_driver")
+
 ###########
 ## Build ##
 ###########
@@ -59,14 +60,14 @@ include_directories(
 
 add_subdirectory(lidar_ros_driver)
 add_subdirectory(test_node)
+
+#############
+## Testing ##
+#############
 if(CATKIN_ENABLE_TESTING)
     enable_testing()
     add_subdirectory(tests)
 endif(CATKIN_ENABLE_TESTING)
-
-include(ClangFormat)
-clang_format_recurse("lidar_ros_driver" "test_node" "tests")
-
 
 #############
 ## Install ##
@@ -77,10 +78,5 @@ set(CPACK_PACKAGE_VERSION_MAJOR "${lidar_ros_driver_VERSION_MAJOR}")
 set(CPACK_PACKAGE_VERSION_MINOR "${lidar_ros_driver_VERSION_MINOR}")
 set(CPACK_PACKAGE_VENDOR "ONET")
 
-
-
-#############
-## Testing ##
-#############
-
-
+include(ClangFormat)
+clang_format_recurse("lidar_ros_driver" "test_node" "tests")
