@@ -21,22 +21,7 @@ find_package(catkin REQUIRED COMPONENTS
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../cmake")
 
 include(DownloadProject)
-
-set(CPPBASE_BUILD_GTEST OFF)
-download_project(
-  PROJ           cppbase
-  GIT_REPOSITORY ssh://git@192.168.10.1:2222/lidar/cppbase
-  GIT_TAG        master
-)
-add_subdirectory(${cppbase_SOURCE_DIR} ${cppbase_BINARY_DIR})
-set(CPPBASE_INCLUDE_DIR ${cppbase_SOURCE_DIR} CACHE STRING "")
-
-download_project(
-  PROJ           lidardevice
-  GIT_REPOSITORY ssh://git@192.168.10.1:2222/lidar/lidardevice
-  GIT_TAG        master
-)
-add_subdirectory(${lidardevice_SOURCE_DIR} ${lidardevice_BINARY_DIR})
+add_subdirectory(external)
 
 ###################################
 ## catkin specific configuration ##
