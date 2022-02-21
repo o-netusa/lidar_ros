@@ -24,7 +24,7 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/point_cloud_conversion.h>
 #include <std_msgs/String.h>
-
+#include <rosbag/bag.h>
 #include <thread>
 
 #include "ParameterFlag.h"
@@ -60,6 +60,7 @@ struct LidarRosDriver::Impl
     bool m_running{true};
     bool m_auto_start{true};
     std::string m_update_parameter;
+    rosbag::Bag m_bag;
     ros::NodeHandle m_node;        //节点
     ros::Publisher m_cloud_pub;    //点云发布者
     ros::Publisher m_param_pub;    //参数设置状态发布者
@@ -97,7 +98,7 @@ struct LidarRosDriver::Impl
         {
             ROS_ERROR("Error fetching parameters: %s", e.what());
         }
-
+        m_bag.open("test.bag",rosbag::bagmode::Write);
         m_cloud_pub = m_node.advertise<sensor_msgs::PointCloud2>(m_point_cloud_topic_name, 100);
         m_param_pub = m_node.advertise<common_msgs::ParameterMsg>(param_msgs, 100);
         m_service = m_node.advertiseService(service_param_flag,
@@ -124,6 +125,7 @@ struct LidarRosDriver::Impl
             ROS_INFO("Stop playback device");
             m_playback_device->Stop();
         }
+         m_bag.close();
     }
 
     void HandlePointCloud(uint32_t frame_id, lidar::PointCloud<onet::lidar::PointXYZI> cloud)
@@ -131,7 +133,7 @@ struct LidarRosDriver::Impl
         if (cloud.empty())
         {
             return;
-        }
+        }        
         cppbase::Timer<cppbase::us> timer;
         sensor_msgs::PointCloud pointcloud;
         pointcloud.header.stamp = ros::Time::now();
@@ -149,12 +151,13 @@ struct LidarRosDriver::Impl
             pointcloud.points[i].y = pt[1];
             pointcloud.points[i].z = pt[2];
         }
-        ROS_INFO("end time:%d us", static_cast<int>(timer.Elapsed()));
+        ROS_INFO("end time:%d us", static_cast<int>(timer.Elapsed())); 
         timer.Stop();
         // convert pointcloud to pointcloud2
         sensor_msgs::PointCloud2 pointcloud2;
         convertPointCloudToPointCloud2(pointcloud, pointcloud2);
         m_cloud_pub.publish(pointcloud2);
+        m_bag.write(m_point_cloud_topic_name,ros::Time::now(),pointcloud2);     
     }
 
     /**
