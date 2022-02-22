@@ -59,6 +59,7 @@ struct LidarRosDriver::Impl
 {
     bool m_running{true};
     bool m_auto_start{true};
+    bool m_save_bag{false};
     std::string m_update_parameter;
     rosbag::Bag m_bag;
     ros::NodeHandle m_node;        //节点
@@ -86,6 +87,7 @@ struct LidarRosDriver::Impl
         {
             // fetch parameters
             m_auto_start = m_node.param<bool>("/onet_lidar_ros_driver/auto_start", m_auto_start);
+            m_save_bag = m_node.param<bool>("/onet_lidar_ros_driver/save_bag", m_save_bag);
             m_point_cloud_topic_name = m_node.param<std::string>(
                 "/onet_lidar_ros_driver/point_cloud_topic_name", m_point_cloud_topic_name);
             m_device_ip =
@@ -98,7 +100,6 @@ struct LidarRosDriver::Impl
         {
             ROS_ERROR("Error fetching parameters: %s", e.what());
         }
-        m_bag.open("test.bag",rosbag::bagmode::Write);
         m_cloud_pub = m_node.advertise<sensor_msgs::PointCloud2>(m_point_cloud_topic_name, 100);
         m_param_pub = m_node.advertise<common_msgs::ParameterMsg>(param_msgs, 100);
         m_service = m_node.advertiseService(service_param_flag,
@@ -106,6 +107,10 @@ struct LidarRosDriver::Impl
         m_callback = [this](uint32_t frame_id, lidar::PointCloud<lidar::PointXYZI> &cloud) {
             HandlePointCloud(frame_id, cloud);
         };
+        if(m_save_bag)
+        {
+            m_bag.open("test.bag",rosbag::bagmode::Write);
+        }
 
         if (m_auto_start)
         {
@@ -125,7 +130,11 @@ struct LidarRosDriver::Impl
             ROS_INFO("Stop playback device");
             m_playback_device->Stop();
         }
-         m_bag.close();
+        if(m_save_bag)
+        {
+            m_bag.close();
+        }
+         
     }
 
     void HandlePointCloud(uint32_t frame_id, lidar::PointCloud<onet::lidar::PointXYZI> cloud)
@@ -157,7 +166,10 @@ struct LidarRosDriver::Impl
         sensor_msgs::PointCloud2 pointcloud2;
         convertPointCloudToPointCloud2(pointcloud, pointcloud2);
         m_cloud_pub.publish(pointcloud2);
-        m_bag.write(m_point_cloud_topic_name,ros::Time::now(),pointcloud2);     
+        if(m_save_bag)
+        {
+            m_bag.write(m_point_cloud_topic_name,ros::Time::now(),pointcloud2);   
+        }    
     }
 
     /**

@@ -5,6 +5,7 @@
     <arg name="port" default="2368" />
     <arg name="playback_file_path" default="" /> <!-- 回访文件路径用于测试，连接激光雷达必须将此路径清空 -->
     <arg name="auto_start" default="true" />
+    <arg name="save_bag" default="true" />
     <node pkg="lidar_ros_driver" type="lidar_ros_driver" name="onet_lidar_ros_driver" output="screen" cwd="node" respawn="false">
         <param name="point_cloud_topic_name" type="string" value="$(arg point_cloud_topic_name)" />
         <param name="frame_id" type="string" value="$(arg frame_id)" />
@@ -12,5 +13,6 @@
         <param name="port" type="int" value="$(arg port)" />
         <param name="playback_file_path" type="string" value="$(arg playback_file_path)" />
         <param name="auto_start" type="bool" value="$(arg auto_start)" />
+        <param name="save_bag" type="bool" value="$(arg save_bag)" />
     </node>
 </launch>
