@@ -1,4 +1,7 @@
 <launch>
+
+    <arg name="rviz" default="true" /> <!-- true: 自动开启 RViz-->
+
     <arg name="point_cloud_topic_name" default="lidar_point_cloud" />
     <arg name="frame_id" default="lidar" />
     <arg name="device_ip" default="192.168.1.2" />
@@ -29,4 +32,8 @@
         <param name="pulse_dif" type="int" value="$(arg pulse_dif)" />
         <param name="sample_rate" type="int" value="$(arg sample_rate)" />
     </node>
+
+    <group if="$(arg rviz)">
+    <node launch-prefix="nice" pkg="rviz" type="rviz" name="rviz" args="-d $(find lidar_ros_driver)/config/onet_lidar.rviz" />
+    </group>
 </launch>
