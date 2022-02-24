@@ -24,7 +24,7 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/point_cloud_conversion.h>
 #include <std_msgs/String.h>
-
+#include <rosbag/bag.h>
 #include <thread>
 
 #include "ParameterFlag.h"
@@ -59,7 +59,9 @@ struct LidarRosDriver::Impl
 {
     bool m_running{true};
     bool m_auto_start{true};
+    bool m_save_bag{false};    
     std::string m_update_parameter;
+    rosbag::Bag m_bag;
     ros::NodeHandle m_node;        //节点
     ros::Publisher m_cloud_pub;    //点云发布者
     ros::Publisher m_param_pub;    //参数设置状态发布者
@@ -72,6 +74,15 @@ struct LidarRosDriver::Impl
     std::string m_playback_file_path;
     int m_playback_fps{10};
 
+    int near_noise_dist{0};
+    int near_noise_intensity{0};
+    int time_dif{0};
+    int high_pul{0};
+    int time_fly{0};
+    int pulse_dif{0};
+    int sample_rate{0};
+
+
     std::function<void(uint32_t, onet::lidar::PointCloud<onet::lidar::PointXYZI> &)> m_callback{
         nullptr};
 
@@ -79,12 +90,25 @@ struct LidarRosDriver::Impl
     lidar::PlaybackDevice *m_playback_device{nullptr};
     std::shared_ptr<onet::lidar::DlphDeviceParameter> m_dev_param;
 
+    void intiLidar(ros::NodeHandle node)
+    {
+        near_noise_dist = node.param<int>("/onet_lidar_ros_driver/near_noise_dist", near_noise_dist);
+        near_noise_intensity = node.param<int>("/onet_lidar_ros_driver/near_noise_intensity", near_noise_intensity);
+        time_dif = node.param<int>("/onet_lidar_ros_driver/time_dif", time_dif);
+        high_pul = node.param<int>("/onet_lidar_ros_driver/high_pul", high_pul);
+        time_fly = node.param<int>("/onet_lidar_ros_driver/time_fly", time_fly);
+        pulse_dif = node.param<int>("/onet_lidar_ros_driver/pulse_dif", pulse_dif);
+        sample_rate= node.param<int>("/onet_lidar_ros_driver/sample_rate", sample_rate);
+    }
+
     Impl(ros::NodeHandle node) : m_node(node)
     {
         try
         {
             // fetch parameters
+            intiLidar(m_node);
             m_auto_start = m_node.param<bool>("/onet_lidar_ros_driver/auto_start", m_auto_start);
+            m_save_bag = m_node.param<bool>("/onet_lidar_ros_driver/save_bag", m_save_bag);
             m_point_cloud_topic_name = m_node.param<std::string>(
                 "/onet_lidar_ros_driver/point_cloud_topic_name", m_point_cloud_topic_name);
             m_device_ip =
@@ -97,7 +121,6 @@ struct LidarRosDriver::Impl
         {
             ROS_ERROR("Error fetching parameters: %s", e.what());
         }
-
         m_cloud_pub = m_node.advertise<sensor_msgs::PointCloud2>(m_point_cloud_topic_name, 100);
         m_param_pub = m_node.advertise<common_msgs::ParameterMsg>(param_msgs, 100);
         m_service = m_node.advertiseService(service_param_flag,
@@ -105,7 +128,10 @@ struct LidarRosDriver::Impl
         m_callback = [this](uint32_t frame_id, lidar::PointCloud<lidar::PointXYZI> &cloud) {
             HandlePointCloud(frame_id, cloud);
         };
-
+        if(m_save_bag)
+        {
+            m_bag.open("test.bag",rosbag::bagmode::Write);
+        }
         if (m_auto_start)
         {
             Run();
@@ -124,6 +150,11 @@ struct LidarRosDriver::Impl
             ROS_INFO("Stop playback device");
             m_playback_device->Stop();
         }
+        if(m_save_bag)
+        {
+            m_bag.close();
+        }
+         
     }
 
     void HandlePointCloud(uint32_t frame_id, lidar::PointCloud<onet::lidar::PointXYZI> cloud)
@@ -131,7 +162,7 @@ struct LidarRosDriver::Impl
         if (cloud.empty())
         {
             return;
-        }
+        }        
         cppbase::Timer<cppbase::us> timer;
         sensor_msgs::PointCloud pointcloud;
         pointcloud.header.stamp = ros::Time::now();
@@ -149,12 +180,16 @@ struct LidarRosDriver::Impl
             pointcloud.points[i].y = pt[1];
             pointcloud.points[i].z = pt[2];
         }
-        ROS_INFO("end time:%d us", static_cast<int>(timer.Elapsed()));
+        ROS_INFO("end time:%d us", static_cast<int>(timer.Elapsed())); 
         timer.Stop();
         // convert pointcloud to pointcloud2
         sensor_msgs::PointCloud2 pointcloud2;
         convertPointCloudToPointCloud2(pointcloud, pointcloud2);
         m_cloud_pub.publish(pointcloud2);
+        if(m_save_bag)
+        {
+            m_bag.write(m_point_cloud_topic_name,ros::Time::now(),pointcloud2);   
+        }    
     }
 
     /**
@@ -199,6 +234,44 @@ struct LidarRosDriver::Impl
             try
             {
                 m_lidar_device->Init();
+                LidarParameter lidar_param=m_lidar_device->GetLidarParameter();
+                {
+                    lidar::RegisterData close_laser_param;
+                    close_laser_param.parameters[0] = 0;
+                    close_laser_param.parameters[1] = 0;
+                    close_laser_param.parameters[2] = lidar_param.laser.factor;
+                    close_laser_param.parameters[3] = lidar_param.laser.level;
+                    close_laser_param.parameters[4] = lidar_param.laser.pulse_width;
+                    m_lidar_device->SetRegisterParameter(lidar::LASER_CTL, close_laser_param);
+                }  
+                sleep(2);
+                m_lidar_device->SetLaser(lidar_param.laser);
+                {
+                    //删除近处杂点
+                    lidar::RegisterData data;
+                    data.parameters[0] = near_noise_dist;
+                    data.parameters[1] = near_noise_intensity;
+                    m_lidar_device->SetRegisterParameter(lidar::TDC_GPX_REG6,data);
+                }         
+                {
+                     //删除远处重影
+                    lidar::RegisterData data;
+                    data.parameters[0] = pulse_dif;
+                    data.parameters[1] = time_fly;
+                    m_lidar_device->SetRegisterParameter(lidar::TDC_GPX_REG5,data);
+                }
+                {
+                    lidar::RegisterData data;
+                    data.parameters[0] = high_pul;
+                    data.parameters[1] = time_dif;
+                    m_lidar_device->SetRegisterParameter(lidar::TDC_GPX_REG4,data);
+                }
+                {
+                    //设置采样频率
+                    lidar::RegisterData data;
+                    data.parameters[0] = sample_rate;
+                    m_lidar_device->SetRegisterParameter(lidar::TDC_GPX_REG0,data);
+                }
                 m_lidar_device->RegisterPointCloudCallback(m_callback);
                 if (!m_lidar_device->Start())
                 {

@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   message_generation
   common_msgs
+  rosbag
 )
 
 
@@ -28,7 +29,7 @@ add_subdirectory(external)
 ###################################
 catkin_package(
   LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS roscpp std_msgs sensor_msgs message_runtime common_msgs
+  CATKIN_DEPENDS roscpp std_msgs sensor_msgs message_runtime common_msgs rosbag
 #  DEPENDS
 )
 
