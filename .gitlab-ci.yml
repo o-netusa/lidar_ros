@@ -14,7 +14,7 @@ stages:
   - test
 
 nightly_linux:
-  image: onet/lidar:ros
+  image: onet/lidar:ros_melodic
   only:
     - schedules
   tags:
@@ -35,7 +35,7 @@ nightly_linux:
     - kill $roscore_pid
 
 build_linux:
-  image: onet/lidar:ros
+  image: onet/lidar:ros_melodic
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
   stage: build
