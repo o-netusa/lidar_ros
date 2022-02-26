@@ -6,6 +6,8 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CXX_STD cxx_std_17)
 
+option(LIDAR_ROS_ENABLE_TEST "Enable unit tests" OFF)
+
 add_subdirectory(common_msgs)
 
 find_package(catkin REQUIRED COMPONENTS
@@ -50,10 +52,10 @@ add_subdirectory(test_node)
 #############
 ## Testing ##
 #############
-if(CATKIN_ENABLE_TESTING)
+if(LIDAR_ROS_ENABLE_TEST)
     enable_testing()
     add_subdirectory(tests)
-endif(CATKIN_ENABLE_TESTING)
+endif()
 
 #############
 ## Install ##
