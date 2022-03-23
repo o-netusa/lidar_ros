@@ -9,6 +9,7 @@
 
 ## Launch the ROS node
 * After catkin_make, set environment using `source devel/setup.bash` and execute `roslaunch lidar_ros_driver run.launch`
+* If `save_bag` set to `True`, the saved bag file can be found in `devel/lib/lidar_ros_driver/test.bag`
 
 ## Create install package
 * Execute `catkin_make install` and package the `install` directory
