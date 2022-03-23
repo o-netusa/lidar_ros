@@ -6,7 +6,7 @@
     <arg name="frame_id" default="lidar" />
     <arg name="device_ip" default="192.168.1.2" />
     <arg name="port" default="2368" />
-    <arg name="playback_file_path" default="/home/cyang/Documents/lidar/lidardevice/tests/test_data/Source4.dp" /> <!-- 回访文件路径用于测试，连接激光雷达必须将此路径清空 -->
+    <arg name="playback_file_path" default="" /> <!-- 回访文件路径用于测试，连接激光雷达必须将此路径清空 -->
     <arg name="auto_start" default="true" />
     <arg name="save_bag" default="true" />
     <arg name="near_noise_dist" default="19200" />
