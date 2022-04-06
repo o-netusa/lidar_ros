@@ -19,11 +19,12 @@
 #include <common_msgs/LidarRosService.h>
 #include <common_msgs/ParameterMsg.h>
 #include <config/DeviceParamsConfig.h>
+#include <pcl_conversions/pcl_conversions.h>
+#include <processing/PointCloudProcessing.h>
 #include <ros/ros.h>
 #include <rosbag/bag.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <std_msgs/String.h>
-#include <pcl_conversions/pcl_conversions.h>
 
 #include <thread>
 
@@ -82,6 +83,11 @@ struct LidarRosDriver::Impl
     int pulse_dif{0};
     int sample_rate{0};
 
+    bool m_enable_remove_noise = true;
+    float m_noise_distance_threshold = 1.0;
+    float m_noise_area_sq = 0.5;
+    float m_noise_range = 500.0;
+
     std::function<void(uint32_t, onet::lidar::PointCloud<onet::lidar::PointXYZI> &)> m_callback{
         nullptr};
 
@@ -110,6 +116,14 @@ struct LidarRosDriver::Impl
         m_frame_id = m_node.param<std::string>("/onet_lidar_ros_driver/frame_id", m_frame_id);
         m_playback_file_path = m_node.param<std::string>(
             "/onet_lidar_ros_driver/playback_file_path", m_playback_file_path);
+
+        m_enable_remove_noise =
+            m_node.param<bool>("/onet_lidar_ros_driver/enable_remove_noise", m_enable_remove_noise);
+        m_noise_distance_threshold = m_node.param<float>(
+            "/onet_lidar_ros_driver/noise_distance_threshold", m_noise_distance_threshold);
+        m_noise_area_sq =
+            m_node.param<float>("/onet_lidar_ros_driver/noise_area_sq", m_noise_area_sq);
+        m_noise_range = m_node.param<float>("/onet_lidar_ros_driver/noise_range", m_noise_range);
     }
 
     Impl(ros::NodeHandle node) : m_node(node)
@@ -196,6 +210,11 @@ struct LidarRosDriver::Impl
     {
         ROS_INFO("Current directory: %s", fs::current_path().string().c_str());
         ROS_INFO("Playback file path: %s", m_playback_file_path.c_str());
+
+        onet::lidar::processing::SetRemovedNoisePoints(m_enable_remove_noise);
+        onet::lidar::processing::SetNoiseDistThreshold(m_noise_distance_threshold);
+        onet::lidar::processing::SetNoiseAreaSq(m_noise_area_sq);
+        onet::lidar::processing::SetNoiseRange(m_noise_range);
         // Use PlaybackDevice if playback_file_path is not empty
         if (!m_playback_file_path.empty())
         {
