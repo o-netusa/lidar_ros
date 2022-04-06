@@ -6,7 +6,7 @@
     <arg name="frame_id" default="lidar" />
     <arg name="device_ip" default="192.168.1.2" />
     <arg name="port" default="2368" />
-    <arg name="playback_file_path" default="/home/cyang/Documents/lidar/lidardevice/tests/test_data/Source4.dp" /> <!-- 回访文件路径用于测试，连接激光雷达必须将此路径清空 -->
+    <arg name="playback_file_path" default="" /> <!-- 回访文件路径用于测试，连接激光雷达必须将此路径清空 -->
     <arg name="auto_start" default="true" />
     <arg name="save_bag" default="true" />
     <arg name="near_noise_dist" default="19200" />
@@ -16,6 +16,16 @@
     <arg name="time_fly" default="19200" />
     <arg name="pulse_dif" default="124" />
     <arg name="sample_rate" default="500" />
+    <!-- Enable or disable noise points removal -->
+    <arg name="enable_remove_noise" default="true" />
+    <!-- Set noise distance threshold in meter, larger number means less noise points -->
+    <arg name="noise_distance_threshold" default="1.0" />
+    <!-- Set noise squared area (0 ~ 1) for filtering out the wrong noise points, 
+    larger number means more wrong noise points which are corrected, however, 
+    larger number means more correct noise points which are not considered as noise points -->
+    <arg name="noise_area_sq" default="0.5" />
+    <!-- Set noise range in meter, only filter out noise point inside this range -->
+    <arg name="noise_range" default="500.0" />
     <node pkg="lidar_ros_driver" type="lidar_ros_driver" name="onet_lidar_ros_driver" output="screen" cwd="node" respawn="false">
         <param name="point_cloud_topic_name" type="string" value="$(arg point_cloud_topic_name)" />
         <param name="frame_id" type="string" value="$(arg frame_id)" />
@@ -31,6 +41,10 @@
         <param name="time_fly" type="int" value="$(arg time_fly)" />
         <param name="pulse_dif" type="int" value="$(arg pulse_dif)" />
         <param name="sample_rate" type="int" value="$(arg sample_rate)" />
+        <param name="enable_remove_noise" type="bool" value="$(arg enable_remove_noise)" />
+        <param name="noise_distance_threshold" type="double" value="$(arg noise_distance_threshold)" />
+        <param name="noise_area_sq" type="double" value="$(arg noise_area_sq)" />
+        <param name="noise_range" type="double" value="$(arg noise_range)" />
     </node>
 
     <group if="$(arg rviz)">
