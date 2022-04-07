@@ -88,6 +88,9 @@ struct LidarRosDriver::Impl
     float m_noise_area_sq = 0.5;
     float m_noise_range = 500.0;
 
+    std::string m_galvanometer_file{""};
+    int m_frame{10};
+
     std::function<void(uint32_t, onet::lidar::PointCloud<onet::lidar::PointXYZI> &)> m_callback{
         nullptr};
 
@@ -124,6 +127,10 @@ struct LidarRosDriver::Impl
         m_noise_area_sq =
             m_node.param<float>("/onet_lidar_ros_driver/noise_area_sq", m_noise_area_sq);
         m_noise_range = m_node.param<float>("/onet_lidar_ros_driver/noise_range", m_noise_range);
+
+        m_galvanometer_file = m_node.param<std::string>("/onet_lidar_ros_driver/galvanometer_file",
+                                                        m_galvanometer_file);
+        m_frame = m_node.param<int>("/onet_lidar_ros_driver/frame_rate", m_frame);
     }
 
     Impl(ros::NodeHandle node) : m_node(node)
@@ -250,6 +257,40 @@ struct LidarRosDriver::Impl
             try
             {
                 m_lidar_device->Init();
+                // apply even galvanometer if there is a txt file exist
+                if (!m_galvanometer_file.empty())
+                {
+                    auto load_galvanometer = [this](std::vector<uint16_t> &data,
+                                                    const std::string &filename) {
+                        std::ifstream file(filename);
+                        while (true)
+                        {
+                            std::string text;
+                            if (std::getline(file, text, '\n'))
+                            {
+                                uint16_t value = atoi(text.c_str());
+                                if (value >= 0 && value <= 4095)
+                                    data.push_back(atoi(text.c_str()));
+                            } else
+                            {
+                                ROS_INFO("Finished reading information from galvanometer.");
+                                break;
+                            }
+                        }
+                    };
+
+                    std::vector<uint16_t> galvanometer_param;
+                    load_galvanometer(galvanometer_param, m_galvanometer_file);
+                    if (galvanometer_param.empty())
+                    {
+                        ROS_ERROR(
+                            "Error: Failed to load galvanometer file, please check the path of the "
+                            "galvanometer file!");
+                    }
+                    std::sort(galvanometer_param.begin(), galvanometer_param.end());
+                    m_lidar_device->SetGalvanometerParameter(m_frame, galvanometer_param);
+                }
+
                 LidarParameter lidar_param = m_lidar_device->GetLidarParameter();
                 {
                     lidar::RegisterData close_laser_param;
