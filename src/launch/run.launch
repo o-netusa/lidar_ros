@@ -1,12 +1,13 @@
 <launch>
-
-    <arg name="rviz" default="true" /> <!-- true: 自动开启 RViz-->
+    <!-- true: 自动开启 RViz-->
+    <arg name="rviz" default="true" /> 
 
     <arg name="point_cloud_topic_name" default="lidar_point_cloud" />
     <arg name="frame_id" default="lidar" />
     <arg name="device_ip" default="192.168.1.2" />
     <arg name="port" default="2368" />
-    <arg name="playback_file_path" default="" /> <!-- 回访文件路径用于测试，连接激光雷达必须将此路径清空 -->
+    <!-- 回访文件路径用于测试，连接激光雷达必须将此路径清空 -->
+    <arg name="playback_file_path" default="" /> 
     <arg name="auto_start" default="true" />
     <arg name="save_bag" default="true" />
     <arg name="near_noise_dist" default="19200" />
@@ -26,6 +27,10 @@
     <arg name="noise_area_sq" default="0.5" />
     <!-- Set noise range in meter, only filter out noise point inside this range -->
     <arg name="noise_range" default="500.0" />
+    <!-- The absolute path of the even galvanometer file, if empty, will load parameter from xml -->
+    <arg name="galvanometer_file" default="" />
+    <!-- max frame rate, keep 10 in most case -->
+    <arg name="frame_rate" default="10" />
     <node pkg="lidar_ros_driver" type="lidar_ros_driver" name="onet_lidar_ros_driver" output="screen" cwd="node" respawn="false">
         <param name="point_cloud_topic_name" type="string" value="$(arg point_cloud_topic_name)" />
         <param name="frame_id" type="string" value="$(arg frame_id)" />
@@ -45,6 +50,8 @@
         <param name="noise_distance_threshold" type="double" value="$(arg noise_distance_threshold)" />
         <param name="noise_area_sq" type="double" value="$(arg noise_area_sq)" />
         <param name="noise_range" type="double" value="$(arg noise_range)" />
+        <param name="galvanometer_file" type="string" value="$(arg galvanometer_file)" />
+        <param name="frame_rate" type="int" value="$(arg frame_rate)" />
     </node>
 
     <group if="$(arg rviz)">
