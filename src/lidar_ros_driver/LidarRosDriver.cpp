@@ -288,7 +288,13 @@ struct LidarRosDriver::Impl
                             "galvanometer file!");
                     }
                     std::sort(galvanometer_param.begin(), galvanometer_param.end());
-                    m_lidar_device->SetGalvanometerParameter(m_frame, galvanometer_param);
+                    try
+                    {
+                        m_lidar_device->SetGalvanometerParameter(m_frame, galvanometer_param);
+                    } catch (const std::exception &e)
+                    {
+                        ROS_ERROR("Error: the galvanometer parameter is illegal!");
+                    }
                 }
 
                 LidarParameter lidar_param = m_lidar_device->GetLidarParameter();
