@@ -81,7 +81,7 @@ struct LidarRosDriver::Impl
     int high_pul{0};
     int time_fly{0};
     int pulse_dif{0};
-    int sample_rate{0};
+    int gather_size{0};
 
     bool m_enable_remove_noise = true;
     float m_noise_distance_threshold = 1.0;
@@ -108,7 +108,7 @@ struct LidarRosDriver::Impl
         high_pul = node.param<int>("/onet_lidar_ros_driver/high_pul", high_pul);
         time_fly = node.param<int>("/onet_lidar_ros_driver/time_fly", time_fly);
         pulse_dif = node.param<int>("/onet_lidar_ros_driver/pulse_dif", pulse_dif);
-        sample_rate = node.param<int>("/onet_lidar_ros_driver/sample_rate", sample_rate);
+        gather_size = node.param<int>("/onet_lidar_ros_driver/gather_size", gather_size);
 
         m_auto_start = m_node.param<bool>("/onet_lidar_ros_driver/auto_start", m_auto_start);
         m_save_bag = m_node.param<bool>("/onet_lidar_ros_driver/save_bag", m_save_bag);
@@ -288,27 +288,37 @@ struct LidarRosDriver::Impl
                             "galvanometer file!");
                     }
                     std::sort(galvanometer_param.begin(), galvanometer_param.end());
-                    try
-                    {
-                        m_lidar_device->SetGalvanometerParameter(m_frame, galvanometer_param);
-                    } catch (const std::exception &e)
-                    {
-                        ROS_ERROR("Error: the galvanometer parameter is illegal!");
-                    }
-                }
 
-                LidarParameter lidar_param = m_lidar_device->GetLidarParameter();
+                 LidarParameter lidar_param = m_lidar_device->GetLidarParameter();
                 {
                     lidar::RegisterData close_laser_param;
-                    close_laser_param.parameters[0] = 0;
-                    close_laser_param.parameters[1] = 0;
-                    close_laser_param.parameters[2] = lidar_param.laser.factor;
-                    close_laser_param.parameters[3] = lidar_param.laser.level;
-                    close_laser_param.parameters[4] = lidar_param.laser.pulse_width;
+                    close_laser_param.parameters[0] = 0; //enable
+                    close_laser_param.parameters[1] = 0; //triger mode default 0
+                    close_laser_param.parameters[2] = lidar_param.laser.factor;  //laser factor [1-10]
+                    close_laser_param.parameters[3] = lidar_param.laser.level;; // laser power []
+                    close_laser_param.parameters[4] = lidar_param.laser.pulse_width;   
                     m_lidar_device->SetRegisterParameter(lidar::LASER_CTL, close_laser_param);
                 }
-                sleep(2);
+                  sleep(1);
+                {
+                    lidar::RegisterData open_laser_param;
+                    open_laser_param.parameters[0] = 1;
+                    open_laser_param.parameters[1] = 0;
+                    open_laser_param.parameters[2] = lidar_param.laser.factor;
+                    open_laser_param.parameters[3] = lidar_param.laser.level;
+                    open_laser_param.parameters[4] = lidar_param.laser.pulse_width;
+                    m_lidar_device->SetRegisterParameter(lidar::LASER_CTL, open_laser_param);
+                }
+                sleep(1);
                 m_lidar_device->SetLaser(lidar_param.laser);
+                {
+                    lidar::RegisterData TimeWin;
+                    TimeWin.parameters[0] = lidar_param.min_time;
+                    TimeWin.parameters[1] = lidar_param.max_time; 
+                    ROS_INFO("max %d",TimeWin.parameters[0]);
+                    ROS_INFO("min %d",TimeWin.parameters[1]);
+                    m_lidar_device->SetRegisterParameter(lidar::TDC_GPX_TIME_RANGE, TimeWin);
+                }
                 {
                     //删除近处杂点
                     lidar::RegisterData data;
@@ -329,10 +339,25 @@ struct LidarRosDriver::Impl
                     data.parameters[1] = time_dif;
                     m_lidar_device->SetRegisterParameter(lidar::TDC_GPX_REG4, data);
                 }
+
+
+                    try
+                    {
+                        m_lidar_device->SetGalvanometerParameter(m_frame, galvanometer_param);
+                          ROS_INFO("m_frame %d",m_frame);
+                       
+                    } catch (const std::exception &e)
+                    {
+                        ROS_ERROR("Error: the galvanometer parameter is illegal!");
+                    }
+                }
+
+              
                 {
                     //设置采样频率
                     lidar::RegisterData data;
-                    data.parameters[0] = sample_rate;
+                    data.parameters[0] = gather_size;
+                     ROS_INFO("gathersize  %d", data.parameters[0]);
                     m_lidar_device->SetRegisterParameter(lidar::TDC_GPX_REG0, data);
                 }
                 m_lidar_device->RegisterPointCloudCallback(m_callback);

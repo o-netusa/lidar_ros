@@ -1,24 +1,24 @@
-<?xml version="1.0" encoding="utf-8" ?>
+﻿<?xml version="1.0" encoding="utf-8" ?>
 <LimitParameterInfo>
     <EchoParameter>
         <EchoMax>1</EchoMax>
         <EchoMin>4</EchoMin>
     </EchoParameter>
 	<FactorParameter>
-        <FactorMin>2</FactorMin>
+        <FactorMin>1</FactorMin>
         <FactorMax>10</FactorMax>
     </FactorParameter>
     <LimitParameter>
         <MaxStep>500</MaxStep>
 		<MaxSpeed>6000</MaxSpeed>
-        <SignelStepAngle>5</SignelStepAngle>
+        <SignelStepAngle>1</SignelStepAngle>
     </LimitParameter>
 	<TimeControlParameter>
         <MaxTime>800</MaxTime>
-        <MinTime>11</MinTime>
+        <MinTime>15</MinTime>
     </TimeControlParameter>
     <DistanceParameter>
-        <MaxTime1>1500</MaxTime1>
+        <MaxTime1>1800</MaxTime1>
     </DistanceParameter>
     <PermissionsParameter>
         <Permissions>2</Permissions>
