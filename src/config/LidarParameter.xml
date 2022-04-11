@@ -1,21 +1,21 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <LidarParameterInfo>
     <ViewFieldParameter>
-        <Interval_1_step>5</Interval_1_step>
-        <Interval_2_step>15</Interval_2_step>
-        <Interval_3_step>15</Interval_3_step>
-        <Interval_4_step>5</Interval_4_step>
-        <Interval_Angle_1>-10.000</Interval_Angle_1>
-        <Interval_Angle_2>-5.000</Interval_Angle_2>
+        <Interval_1_step>10</Interval_1_step>
+        <Interval_2_step>10</Interval_2_step>
+        <Interval_3_step>10</Interval_3_step>
+        <Interval_4_step>10</Interval_4_step>
+        <Interval_Angle_1>-2</Interval_Angle_1>
+        <Interval_Angle_2>-1.000</Interval_Angle_2>
         <Interval_Angle_3>0.000</Interval_Angle_3>
-        <Interval_Angle_4>5.000</Interval_Angle_4>
-        <Interval_Angle_5>10.000</Interval_Angle_5>
-        <FrameFrequency>10</FrameFrequency>
+        <Interval_Angle_4>1.000</Interval_Angle_4>
+        <Interval_Angle_5>2.000</Interval_Angle_5>
+        <FrameFrequency>3</FrameFrequency>
     </ViewFieldParameter>
     <LaserParameter>
-        <PowerType>4</PowerType>
-        <PowerFactorType>4</PowerFactorType>
-        <PulseWidthType>7</PulseWidthType>
+        <PowerType>250</PowerType>
+        <PowerFactorType>6</PowerFactorType>
+        <PulseWidthType>3</PulseWidthType>
     </LaserParameter>
     <LaserEchoNumber>
         <EchoNumber>1</EchoNumber>
@@ -26,16 +26,31 @@
     <SeedDac>
         <Value>720</Value>
     </SeedDac>
-    <TimeWin>
-        <min>170</min>
-        <max>170</max>
-    </TimeWin>
     <DcThreshold>
-        <dc_Q>20</dc_Q>
-        <dc_I>20</dc_I>
-        <threshold>50</threshold>
+        <dc_q>20</dc_q>
+        <dc_i>20</dc_i>
+        <threshold>60</threshold>
     </DcThreshold>
+    <TimeWin>
+        <min>135</min>
+        <max>1900</max>
+    </TimeWin>
     <SourceDataType>
         <DataType>0</DataType>
     </SourceDataType>
+    <GatherSize>
+        <gather_point_size>1920</gather_point_size>
+    </GatherSize>
+    <AmplitudeExeclude>
+        <time_stamp>19200</time_stamp>
+        <amplitude_exclude>135</amplitude_exclude>
+    </AmplitudeExeclude>
+    <GhostExeclude>
+        <high_plusewidth>350</high_plusewidth>
+        <time_difference>150</time_difference>
+    </GhostExeclude>
+    <PluseWidth>
+        <plusewidth_diff>120</plusewidth_diff>
+        <time_fly>20000</time_fly>
+    </PluseWidth>
 </LidarParameterInfo>

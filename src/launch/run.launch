@@ -4,7 +4,7 @@
 
     <arg name="point_cloud_topic_name" default="lidar_point_cloud" />
     <arg name="frame_id" default="lidar" />
-    <arg name="device_ip" default="192.168.1.2" />
+    <arg name="device_ip" default="169.254.164.40" />
     <arg name="port" default="2368" />
     <!-- 回访文件路径用于测试，连接激光雷达必须将此路径清空 -->
     <arg name="playback_file_path" default="" /> 
@@ -12,13 +12,13 @@
     <arg name="save_bag" default="true" />
     <arg name="near_noise_dist" default="19200" />
     <arg name="near_noise_intensity" default="135" />
-    <arg name="time_dif" default="200" />
+    <arg name="time_dif" default="150" />
     <arg name="high_pul" default="350" />
-    <arg name="time_fly" default="19200" />
-    <arg name="pulse_dif" default="124" />
-    <arg name="sample_rate" default="500" />
+    <arg name="time_fly" default="20000" />
+    <arg name="pulse_dif" default="120" />
+    <arg name="gather_size" default="1920" />
     <!-- Enable or disable noise points removal -->
-    <arg name="enable_remove_noise" default="true" />
+    <arg name="enable_remove_noise" default="false" />
     <!-- Set noise distance threshold in meter, larger number means less noise points -->
     <arg name="noise_distance_threshold" default="1.0" />
     <!-- Set noise squared area (0 ~ 1) for filtering out the wrong noise points, 
@@ -28,9 +28,9 @@
     <!-- Set noise range in meter, only filter out noise point inside this range -->
     <arg name="noise_range" default="500.0" />
     <!-- The absolute path of the even galvanometer file, if empty, will load parameter from xml -->
-    <arg name="galvanometer_file" default="" />
-    <!-- max frame rate, keep 10 in most case -->
-    <arg name="frame_rate" default="10" />
+    <arg name="galvanometer_file" default="/home/onet/lidar_ros/src/config/6#g_DA_Value_1.txt" />
+    <!-- max frame rate, default keep less 10 in most case -->
+    <arg name="frame_rate" default="3" />
     <node pkg="lidar_ros_driver" type="lidar_ros_driver" name="onet_lidar_ros_driver" output="screen" cwd="node" respawn="false">
         <param name="point_cloud_topic_name" type="string" value="$(arg point_cloud_topic_name)" />
         <param name="frame_id" type="string" value="$(arg frame_id)" />
@@ -45,7 +45,7 @@
         <param name="high_pul" type="int" value="$(arg high_pul)" />
         <param name="time_fly" type="int" value="$(arg time_fly)" />
         <param name="pulse_dif" type="int" value="$(arg pulse_dif)" />
-        <param name="sample_rate" type="int" value="$(arg sample_rate)" />
+        <param name="gather_size" type="int" value="$(arg gather_size)" />
         <param name="enable_remove_noise" type="bool" value="$(arg enable_remove_noise)" />
         <param name="noise_distance_threshold" type="double" value="$(arg noise_distance_threshold)" />
         <param name="noise_area_sq" type="double" value="$(arg noise_area_sq)" />
