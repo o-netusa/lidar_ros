@@ -35,10 +35,10 @@
     <CheckAlgorithmParameter>
         <Check_Coefficient_2_Left>0.0</Check_Coefficient_2_Left>
         <Check_Coefficient_Left>0.00234199997761714</Check_Coefficient_Left>
-        <Check_Distance_Left>-17.4610764857657</Check_Distance_Left>
+        <Check_Distance_Left>-17.9110764857657</Check_Distance_Left>
         <Check_Coefficient_2_Right>0.0</Check_Coefficient_2_Right>
         <Check_Coefficient_Right>0.00234199997761714</Check_Coefficient_Right>
-        <Check_Distance_Right>-17.4511264117876</Check_Distance_Right>
+        <Check_Distance_Right>-17.9011264117876</Check_Distance_Right>
     </CheckAlgorithmParameter>
     <CheckDistanceParameter>
         <Check_Coefficient_Left>-0.0211007675700545</Check_Coefficient_Left>
@@ -51,9 +51,9 @@
         <Check_x6_Right>-450.034443441744</Check_x6_Right>
     </CheckDistanceParameter>
     <CheckZeroRangeParameter>
-        <Check_Max_Bound_Left>15.46</Check_Max_Bound_Left>
+        <Check_Max_Bound_Left>25.46</Check_Max_Bound_Left>
         <Check_Min_Bound_Left>-34.76</Check_Min_Bound_Left>
-        <Check_Max_Bound_Right>15.44</Check_Max_Bound_Right>
+        <Check_Max_Bound_Right>25.44</Check_Max_Bound_Right>
         <Check_Min_Bound_Right>-34.61</Check_Min_Bound_Right>
     </CheckZeroRangeParameter>
     <KParameter>

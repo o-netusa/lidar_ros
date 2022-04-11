@@ -28,9 +28,9 @@
     <!-- Set noise range in meter, only filter out noise point inside this range -->
     <arg name="noise_range" default="500.0" />
     <!-- The absolute path of the even galvanometer file, if empty, will load parameter from xml -->
-    <arg name="galvanometer_file" default="/home/onet/lidar_ros/src/config/6#g_DA_Value_1.txt" />
+    <arg name="galvanometer_file" default="/home/onet/0411/lidar_ros/devel/lib/lidar_ros_driver/config/5#g_DA_Value_junyun.txt" />
     <!-- max frame rate, default keep less 10 in most case -->
-    <arg name="frame_rate" default="3" />
+    <arg name="frame_rate" default="10" />
     <node pkg="lidar_ros_driver" type="lidar_ros_driver" name="onet_lidar_ros_driver" output="screen" cwd="node" respawn="false">
         <param name="point_cloud_topic_name" type="string" value="$(arg point_cloud_topic_name)" />
         <param name="frame_id" type="string" value="$(arg frame_id)" />
