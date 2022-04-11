@@ -258,6 +258,36 @@ struct LidarRosDriver::Impl
             {
                 m_lidar_device->Init();
                 // apply even galvanometer if there is a txt file exist
+                    LidarParameter lidar_param = m_lidar_device->GetLidarParameter();
+                {
+                    lidar::RegisterData close_laser_param;
+                    close_laser_param.parameters[0] = 0; //enable
+                    close_laser_param.parameters[1] = 0; //triger mode default 0
+                    close_laser_param.parameters[2] = lidar_param.laser.factor;  //laser factor [1-10]
+                    close_laser_param.parameters[3] = lidar_param.laser.level;; // laser power []
+                    close_laser_param.parameters[4] = lidar_param.laser.pulse_width;   
+                    m_lidar_device->SetRegisterParameter(lidar::LASER_CTL, close_laser_param);
+                }
+                  sleep(1);
+                {
+                    lidar::RegisterData open_laser_param;
+                    open_laser_param.parameters[0] = 1;
+                    open_laser_param.parameters[1] = 0;
+                    open_laser_param.parameters[2] = lidar_param.laser.factor;
+                    open_laser_param.parameters[3] = lidar_param.laser.level;
+                    open_laser_param.parameters[4] = lidar_param.laser.pulse_width;
+                    m_lidar_device->SetRegisterParameter(lidar::LASER_CTL, open_laser_param);
+                }
+                sleep(1);
+                m_lidar_device->SetLaser(lidar_param.laser);
+                {
+                    lidar::RegisterData TimeWin;
+                    TimeWin.parameters[0] = lidar_param.min_time;
+                    TimeWin.parameters[1] = lidar_param.max_time; 
+                    ROS_INFO("max %d",TimeWin.parameters[0]);
+                    ROS_INFO("min %d",TimeWin.parameters[1]);
+                    m_lidar_device->SetRegisterParameter(lidar::TDC_GPX_TIME_RANGE, TimeWin);
+                }   
                 if (!m_galvanometer_file.empty())
                 {
                     auto load_galvanometer = [this](std::vector<uint16_t> &data,
@@ -288,59 +318,6 @@ struct LidarRosDriver::Impl
                             "galvanometer file!");
                     }
                     std::sort(galvanometer_param.begin(), galvanometer_param.end());
-
-                 LidarParameter lidar_param = m_lidar_device->GetLidarParameter();
-                {
-                    lidar::RegisterData close_laser_param;
-                    close_laser_param.parameters[0] = 0; //enable
-                    close_laser_param.parameters[1] = 0; //triger mode default 0
-                    close_laser_param.parameters[2] = lidar_param.laser.factor;  //laser factor [1-10]
-                    close_laser_param.parameters[3] = lidar_param.laser.level;; // laser power []
-                    close_laser_param.parameters[4] = lidar_param.laser.pulse_width;   
-                    m_lidar_device->SetRegisterParameter(lidar::LASER_CTL, close_laser_param);
-                }
-                  sleep(1);
-                {
-                    lidar::RegisterData open_laser_param;
-                    open_laser_param.parameters[0] = 1;
-                    open_laser_param.parameters[1] = 0;
-                    open_laser_param.parameters[2] = lidar_param.laser.factor;
-                    open_laser_param.parameters[3] = lidar_param.laser.level;
-                    open_laser_param.parameters[4] = lidar_param.laser.pulse_width;
-                    m_lidar_device->SetRegisterParameter(lidar::LASER_CTL, open_laser_param);
-                }
-                sleep(1);
-                m_lidar_device->SetLaser(lidar_param.laser);
-                {
-                    lidar::RegisterData TimeWin;
-                    TimeWin.parameters[0] = lidar_param.min_time;
-                    TimeWin.parameters[1] = lidar_param.max_time; 
-                    ROS_INFO("max %d",TimeWin.parameters[0]);
-                    ROS_INFO("min %d",TimeWin.parameters[1]);
-                    m_lidar_device->SetRegisterParameter(lidar::TDC_GPX_TIME_RANGE, TimeWin);
-                }
-                {
-                    //删除近处杂点
-                    lidar::RegisterData data;
-                    data.parameters[0] = near_noise_dist;
-                    data.parameters[1] = near_noise_intensity;
-                    m_lidar_device->SetRegisterParameter(lidar::TDC_GPX_REG6, data);
-                }
-                {
-                    //删除远处重影
-                    lidar::RegisterData data;
-                    data.parameters[0] = pulse_dif;
-                    data.parameters[1] = time_fly;
-                    m_lidar_device->SetRegisterParameter(lidar::TDC_GPX_REG5, data);
-                }
-                {
-                    lidar::RegisterData data;
-                    data.parameters[0] = high_pul;
-                    data.parameters[1] = time_dif;
-                    m_lidar_device->SetRegisterParameter(lidar::TDC_GPX_REG4, data);
-                }
-
-
                     try
                     {
                         m_lidar_device->SetGalvanometerParameter(m_frame, galvanometer_param);
@@ -351,8 +328,6 @@ struct LidarRosDriver::Impl
                         ROS_ERROR("Error: the galvanometer parameter is illegal!");
                     }
                 }
-
-              
                 {
                     //设置采样频率
                     lidar::RegisterData data;
