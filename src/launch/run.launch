@@ -10,13 +10,6 @@
     <arg name="playback_file_path" default="" /> 
     <arg name="auto_start" default="true" />
     <arg name="save_bag" default="true" />
-    <arg name="near_noise_dist" default="19200" />
-    <arg name="near_noise_intensity" default="135" />
-    <arg name="time_dif" default="150" />
-    <arg name="high_pul" default="350" />
-    <arg name="time_fly" default="20000" />
-    <arg name="pulse_dif" default="120" />
-    <arg name="gather_size" default="1920" />
     <!-- Enable or disable noise points removal -->
     <arg name="enable_remove_noise" default="false" />
     <!-- Set noise distance threshold in meter, larger number means less noise points -->
@@ -27,10 +20,6 @@
     <arg name="noise_area_sq" default="0.5" />
     <!-- Set noise range in meter, only filter out noise point inside this range -->
     <arg name="noise_range" default="500.0" />
-    <!-- The absolute path of the even galvanometer file, if empty, will load parameter from xml -->
-    <arg name="galvanometer_file" default="/home/onet/0411/lidar_ros/devel/lib/lidar_ros_driver/config/5#g_DA_Value_junyun.txt" />
-    <!-- max frame rate, default keep less 10 in most case -->
-    <arg name="frame_rate" default="10" />
     <node pkg="lidar_ros_driver" type="lidar_ros_driver" name="onet_lidar_ros_driver" output="screen" cwd="node" respawn="false">
         <param name="point_cloud_topic_name" type="string" value="$(arg point_cloud_topic_name)" />
         <param name="frame_id" type="string" value="$(arg frame_id)" />
@@ -39,19 +28,10 @@
         <param name="playback_file_path" type="string" value="$(arg playback_file_path)" />
         <param name="auto_start" type="bool" value="$(arg auto_start)" />
         <param name="save_bag" type="bool" value="$(arg save_bag)" />
-        <param name="near_noise_dist" type="int" value="$(arg near_noise_dist)" />
-        <param name="near_noise_intensity" type="int" value="$(arg near_noise_intensity)" />
-        <param name="time_dif" type="int" value="$(arg time_dif)" />
-        <param name="high_pul" type="int" value="$(arg high_pul)" />
-        <param name="time_fly" type="int" value="$(arg time_fly)" />
-        <param name="pulse_dif" type="int" value="$(arg pulse_dif)" />
-        <param name="gather_size" type="int" value="$(arg gather_size)" />
         <param name="enable_remove_noise" type="bool" value="$(arg enable_remove_noise)" />
         <param name="noise_distance_threshold" type="double" value="$(arg noise_distance_threshold)" />
         <param name="noise_area_sq" type="double" value="$(arg noise_area_sq)" />
         <param name="noise_range" type="double" value="$(arg noise_range)" />
-        <param name="galvanometer_file" type="string" value="$(arg galvanometer_file)" />
-        <param name="frame_rate" type="int" value="$(arg frame_rate)" />
     </node>
 
     <group if="$(arg rviz)">
