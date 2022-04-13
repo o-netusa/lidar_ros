@@ -53,4 +53,7 @@
         <plusewidth_diff>120</plusewidth_diff>
         <time_fly>20000</time_fly>
     </PluseWidth>
+    <Frame>
+        <frame_rate>10</frame_rate>
+    </Frame>
 </LidarParameterInfo>
