@@ -1,63 +1,63 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <CheckParameterInfo>
     <CheckParameter>
-        <Check_Alphal_R>0.0773959265</Check_Alphal_R>
-        <Check_Theta_R>-9.6767063169</Check_Theta_R>
-        <Check_Roll_R>0.6702682139</Check_Roll_R>
-        <Check_Pitch_R>-3.0617912671</Check_Pitch_R>
-        <Check_Yaw_R>8.1613965614</Check_Yaw_R>
-        <Check_Alphal_L>1.3497713994</Check_Alphal_L>
-        <Check_Theta_L>-9.7093698319</Check_Theta_L>
-        <Check_Roll_L>0.6702682139</Check_Roll_L>
-        <Check_Pitch_L>-3.0617912671</Check_Pitch_L>
-        <Check_Yaw_L>8.1613965614</Check_Yaw_L>
-        <Check_Rotator_Roll>3.4762452089</Check_Rotator_Roll>
-        <Check_Rotator_Pitch>-2.0187662607</Check_Rotator_Pitch>
-        <Check_Rotator_Yaw>2.1325845394</Check_Rotator_Yaw>
+        <Check_Alphal_R>0.0491787191</Check_Alphal_R>
+        <Check_Theta_R>10.8740668680</Check_Theta_R>
+        <Check_Roll_R>0.6219675331</Check_Roll_R>
+        <Check_Pitch_R>-0.7481697876</Check_Pitch_R>
+        <Check_Yaw_R>-3.6222045740</Check_Yaw_R>
+        <Check_Alphal_L>1.3577656829</Check_Alphal_L>
+        <Check_Theta_L>10.8685548699</Check_Theta_L>
+        <Check_Roll_L>0.6219675331</Check_Roll_L>
+        <Check_Pitch_L>-0.7481697876</Check_Pitch_L>
+        <Check_Yaw_L>-3.6222045740</Check_Yaw_L>
+        <Check_Rotator_Roll>0.6151099168</Check_Rotator_Roll>
+        <Check_Rotator_Pitch>0.1449975875</Check_Rotator_Pitch>
+        <Check_Rotator_Yaw>-4.5074530979</Check_Rotator_Yaw>
         <Check_Rotator_Angle_Offset>0</Check_Rotator_Angle_Offset>
-        <Check_Rotator_Mirror_Theta_1>5.8426887061</Check_Rotator_Mirror_Theta_1>
-        <Check_Rotator_Mirror_Alphal_2>-0.2198719363</Check_Rotator_Mirror_Alphal_2>
-        <Check_Rotator_Mirror_Theta_2>5.7598251115</Check_Rotator_Mirror_Theta_2>
-        <Check_Rotator_Mirror_Alphal_3>-0.5251555836</Check_Rotator_Mirror_Alphal_3>
-        <Check_Rotator_Mirror_Theta_3>5.8772941125</Check_Rotator_Mirror_Theta_3>
-        <Check_Rotator_Mirror_Alphal_4>-0.5133505944</Check_Rotator_Mirror_Alphal_4>
-        <Check_Rotator_Mirror_Theta_4>5.8496882528</Check_Rotator_Mirror_Theta_4>
-        <Check_Rotator_Mirror_Alphal_5>-0.2287831580</Check_Rotator_Mirror_Alphal_5>
-        <Check_Rotator_Mirror_Theta_5>5.8738565792</Check_Rotator_Mirror_Theta_5>
-        <Check_GalvanometerMirror_R_theta>-8.0976704976</Check_GalvanometerMirror_R_theta>
-        <Check_GalvanometerMirror_L_theta>-8.0976704976</Check_GalvanometerMirror_L_theta>
+        <Check_Rotator_Mirror_Theta_1>1.2308419856</Check_Rotator_Mirror_Theta_1>
+        <Check_Rotator_Mirror_Alphal_2>0.0895553879</Check_Rotator_Mirror_Alphal_2>
+        <Check_Rotator_Mirror_Theta_2>0.9626365493</Check_Rotator_Mirror_Theta_2>
+        <Check_Rotator_Mirror_Alphal_3>0.2748410220</Check_Rotator_Mirror_Alphal_3>
+        <Check_Rotator_Mirror_Theta_3>0.6814818722</Check_Rotator_Mirror_Theta_3>
+        <Check_Rotator_Mirror_Alphal_4>0.3097281310</Check_Rotator_Mirror_Alphal_4>
+        <Check_Rotator_Mirror_Theta_4>0.7707488639</Check_Rotator_Mirror_Theta_4>
+        <Check_Rotator_Mirror_Alphal_5>0.1282252158</Check_Rotator_Mirror_Alphal_5>
+        <Check_Rotator_Mirror_Theta_5>1.1150471648</Check_Rotator_Mirror_Theta_5>
+        <Check_GalvanometerMirror_R_theta>3.5086163261</Check_GalvanometerMirror_R_theta>
+        <Check_GalvanometerMirror_L_theta>3.5086163261</Check_GalvanometerMirror_L_theta>
     </CheckParameter>
     <CheckOffsetParameter>
-        <Check_Azimuth>-0.5351220289</Check_Azimuth>
-        <Check_RightVertical>-4.1498377410</Check_RightVertical>
-        <Check_LeftVertical>-4.1498377410</Check_LeftVertical>
+        <Check_Azimuth>-7.4279512986</Check_Azimuth>
+        <Check_RightVertical>-0.6433314505</Check_RightVertical>
+        <Check_LeftVertical>-0.6433314505</Check_LeftVertical>
     </CheckOffsetParameter>
     <CheckAlgorithmParameter>
         <Check_Coefficient_2_Left>0.0</Check_Coefficient_2_Left>
-        <Check_Coefficient_Left>0.00234199997761714</Check_Coefficient_Left>
-        <Check_Distance_Left>-17.9110764857657</Check_Distance_Left>
+        <Check_Coefficient_Left>0.00234145235455157</Check_Coefficient_Left>
+        <Check_Distance_Left>-17.3327024751443</Check_Distance_Left>
         <Check_Coefficient_2_Right>0.0</Check_Coefficient_2_Right>
-        <Check_Coefficient_Right>0.00234199997761714</Check_Coefficient_Right>
-        <Check_Distance_Right>-17.9011264117876</Check_Distance_Right>
+        <Check_Coefficient_Right>0.00234145235455157</Check_Coefficient_Right>
+        <Check_Distance_Right>-17.1612178650308</Check_Distance_Right>
     </CheckAlgorithmParameter>
     <CheckDistanceParameter>
-        <Check_Coefficient_Left>-0.0211007675700545</Check_Coefficient_Left>
-        <Check_Distance_Left>-12.9975643413698</Check_Distance_Left>
-        <Check_Pulsewidth_Left>-0.846565733281533</Check_Pulsewidth_Left>
-        <Check_x6_Left>-449.997843401154</Check_x6_Left>
-        <Check_Coefficient_Right>-0.0184983440622266</Check_Coefficient_Right>
-        <Check_Distance_Right>-0.0319117844268798</Check_Distance_Right>
-        <Check_Pulsewidth_Right>-0.858105854337057</Check_Pulsewidth_Right>
-        <Check_x6_Right>-450.034443441744</Check_x6_Right>
+        <Check_Coefficient_Left>-0.0102120057253399</Check_Coefficient_Left>
+        <Check_Distance_Left>4.90665072830715</Check_Distance_Left>
+        <Check_Pulsewidth_Left>-0.906791061710911</Check_Pulsewidth_Left>
+        <Check_x6_Left>-449.985416341893</Check_x6_Left>
+        <Check_Coefficient_Right>-0.0384526438714258</Check_Coefficient_Right>
+        <Check_Distance_Right>-7.19332899340287</Check_Distance_Right>
+        <Check_Pulsewidth_Right>-1.4689330110912</Check_Pulsewidth_Right>
+        <Check_x6_Right>-450.029188038807</Check_x6_Right>
     </CheckDistanceParameter>
     <CheckZeroRangeParameter>
-        <Check_Max_Bound_Left>25.46</Check_Max_Bound_Left>
+        <Check_Max_Bound_Left>15.46</Check_Max_Bound_Left>
         <Check_Min_Bound_Left>-34.76</Check_Min_Bound_Left>
-        <Check_Max_Bound_Right>25.44</Check_Max_Bound_Right>
+        <Check_Max_Bound_Right>15.44</Check_Max_Bound_Right>
         <Check_Min_Bound_Right>-34.61</Check_Min_Bound_Right>
     </CheckZeroRangeParameter>
     <KParameter>
-        <KData>0.9900950012</KData>
+        <KData>1.0316270855</KData>
     </KParameter>
     <RadianTransformParameter>
         <check_a>3.5</check_a>

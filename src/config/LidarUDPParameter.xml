@@ -1,0 +1,8 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<LidarParameterInfo>
+    <LidarParameter>
+        <Port>2368</Port>
+        <IP>192.168.1.2</IP>
+        <Time>0</Time>
+    </LidarParameter>
+</LidarParameterInfo>

@@ -59,7 +59,6 @@ struct LidarRosDriver::Impl
     ros::NodeHandle m_node;        //节点
     ros::Publisher m_cloud_pub;    //点云发布者
     ros::Publisher m_param_pub;    //参数设置状态发布者
-    ros::ServiceServer m_service;  // connect参数设置状态
 
     std::string m_point_cloud_topic_name{"lidar_point_cloud"};
     std::string m_frame_id{"lidar"};
@@ -67,11 +66,6 @@ struct LidarRosDriver::Impl
     int m_port{2368};
     std::string m_playback_file_path;
     int m_playback_fps{10};
-
-    bool m_enable_remove_noise = true;
-    float m_noise_distance_threshold = 1.0;
-    float m_noise_area_sq = 0.5;
-    float m_noise_range = 500.0;
 
     std::function<void(uint32_t, onet::lidar::PointCloud<onet::lidar::PointXYZI> &)> m_callback{
         nullptr};
@@ -92,13 +86,6 @@ struct LidarRosDriver::Impl
         m_playback_file_path = m_node.param<std::string>(
             "/onet_lidar_ros_driver/playback_file_path", m_playback_file_path);
 
-        m_enable_remove_noise =
-            m_node.param<bool>("/onet_lidar_ros_driver/enable_remove_noise", m_enable_remove_noise);
-        m_noise_distance_threshold = m_node.param<float>(
-            "/onet_lidar_ros_driver/noise_distance_threshold", m_noise_distance_threshold);
-        m_noise_area_sq =
-            m_node.param<float>("/onet_lidar_ros_driver/noise_area_sq", m_noise_area_sq);
-        m_noise_range = m_node.param<float>("/onet_lidar_ros_driver/noise_range", m_noise_range);
     }
 
     Impl(ros::NodeHandle node) : m_node(node)
@@ -167,9 +154,10 @@ struct LidarRosDriver::Impl
         msg_pointcloud.header.stamp = ros::Time::now();
         msg_pointcloud.header.frame_id = m_frame_id;
 
-        ROS_DEBUG("end time:%d us", static_cast<int>(timer.Elapsed()));
-        timer.Stop();
         m_cloud_pub.publish(msg_pointcloud);
+        ROS_INFO("end time:%d us", static_cast<int>(timer.Elapsed()));
+        timer.Stop();
+       
         if (m_save_bag)
         {
             m_bag.write(m_point_cloud_topic_name, ros::Time::now(), msg_pointcloud);
@@ -181,13 +169,8 @@ struct LidarRosDriver::Impl
      */
     void Run()
     {
-        ROS_DEBUG("Current directory: %s", fs::current_path().string().c_str());
-        ROS_DEBUG("Playback file path: %s", m_playback_file_path.c_str());
-
-        onet::lidar::processing::SetRemovedNoisePoints(m_enable_remove_noise);
-        onet::lidar::processing::SetNoiseDistThreshold(m_noise_distance_threshold);
-        onet::lidar::processing::SetNoiseAreaSq(m_noise_area_sq);
-        onet::lidar::processing::SetNoiseRange(m_noise_range);
+        ROS_INFO("Current directory: %s",fs::current_path().string().c_str());
+        ROS_INFO("Playback file path: %s", m_playback_file_path.c_str());
         // Use PlaybackDevice if playback_file_path is not empty
         if (!m_playback_file_path.empty())
         {
