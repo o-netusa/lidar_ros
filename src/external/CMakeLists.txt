@@ -25,8 +25,8 @@ set(CPPBASE_INCLUDE_DIR ${cppbase_SOURCE_DIR} CACHE STRING "")
 message("==> Configuring lidardevice")
 download_project(
   PROJ     lidardevice
-  URL      ${CMAKE_CURRENT_SOURCE_DIR}/lidardevice/LidarDevice-1.0.0-Linux.tar.gz
-  URL_HASH MD5=1f9d9af4f14bf12b6437f7baa754db48
+  URL      ${CMAKE_CURRENT_SOURCE_DIR}/lidardevice/LidarDevice-1.0.0-x86_64_Linux.tar.gz
+  URL_HASH MD5=49ee3656411f6a663c91bc1978b01e4d  
   QUIET
 )
 add_library(lidardevice INTERFACE)

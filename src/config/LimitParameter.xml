@@ -23,4 +23,14 @@
     <PermissionsParameter>
         <Permissions>2</Permissions>
     </PermissionsParameter>
+    <NoiseCtrlParams>
+        <EnableRemoveNoise>1</EnableRemoveNoise>
+        <AreaSq>0.5</AreaSq>
+        <Range>20</Range>
+        <DistanceThreshold>1.0</DistanceThreshold>
+    </NoiseCtrlParams>
+     <PulseLimitParameter>
+        <MaxPluse>700</MaxPulse>
+        <MinPluse>200</MinPulse>
+    </PulseLimitParameter>
 </LimitParameterInfo>
