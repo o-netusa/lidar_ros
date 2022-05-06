@@ -14,7 +14,7 @@
     </ViewFieldParameter>
     <LaserParameter>
         <PowerType>3</PowerType>
-        <PowerFactorType>6</PowerFactorType>
+        <PowerFactorType>3</PowerFactorType>
         <PulseWidthType>3</PulseWidthType>
     </LaserParameter>
     <LaserEchoNumber>
@@ -33,7 +33,7 @@
     </DcThreshold>
     <TimeWin>
         <min>135</min>
-        <max>1920</max>
+        <max>400</max>
     </TimeWin>
     <SourceDataType>
         <DataType>0</DataType>
