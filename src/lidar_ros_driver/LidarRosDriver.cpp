@@ -85,7 +85,6 @@ struct LidarRosDriver::Impl
         m_frame_id = m_node.param<std::string>("/onet_lidar_ros_driver/frame_id", m_frame_id);
         m_playback_file_path = m_node.param<std::string>(
             "/onet_lidar_ros_driver/playback_file_path", m_playback_file_path);
-
     }
 
     Impl(ros::NodeHandle node) : m_node(node)
@@ -157,7 +156,6 @@ struct LidarRosDriver::Impl
         m_cloud_pub.publish(msg_pointcloud);
         ROS_INFO("end time:%d us", static_cast<int>(timer.Elapsed()));
         timer.Stop();
-       
         if (m_save_bag)
         {
             m_bag.write(m_point_cloud_topic_name, ros::Time::now(), msg_pointcloud);
@@ -169,7 +167,7 @@ struct LidarRosDriver::Impl
      */
     void Run()
     {
-        ROS_INFO("Current directory: %s",fs::current_path().string().c_str());
+        ROS_INFO("Current directory: %s", fs::current_path().string().c_str());
         ROS_INFO("Playback file path: %s", m_playback_file_path.c_str());
         // Use PlaybackDevice if playback_file_path is not empty
         if (!m_playback_file_path.empty())

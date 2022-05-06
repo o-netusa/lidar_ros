@@ -1,10 +1,10 @@
 <launch>
     <!-- true: 自动开启 RViz-->
-    <arg name="rviz" default="true" /> 
+    <arg name="rviz" default="false" /> 
 
     <arg name="point_cloud_topic_name" default="lidar_point_cloud" />
     <arg name="frame_id" default="lidar" />
-    <arg name="device_ip" default="192.168.1.102" />
+    <arg name="device_ip" default="192.168.1.2" />
     <arg name="port" default="2368" />
     <!-- 回访文件路径用于测试，连接激光雷达必须将此路径清空 -->
     <arg name="playback_file_path" default="" /> 
