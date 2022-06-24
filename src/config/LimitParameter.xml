@@ -30,7 +30,7 @@
         <DistanceThreshold>1.0</DistanceThreshold>
     </NoiseCtrlParams>
      <PulseLimitParameter>
-        <MaxPluse>700</MaxPulse>
+        <MaxPluse>900</MaxPulse>
         <MinPluse>200</MinPulse>
     </PulseLimitParameter>
 </LimitParameterInfo>
