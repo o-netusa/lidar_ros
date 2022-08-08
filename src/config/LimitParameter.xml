@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8" ?>
 <LimitParameterInfo>
     <EchoParameter>
         <EchoMax>1</EchoMax>
@@ -10,7 +10,7 @@
     </FactorParameter>
     <LimitParameter>
         <MaxStep>500</MaxStep>
-		<MaxSpeed>6000</MaxSpeed>
+		<MaxSpeed>7200</MaxSpeed>
         <SignelStepAngle>1</SignelStepAngle>
     </LimitParameter>
 	<TimeControlParameter>
@@ -30,7 +30,10 @@
         <DistanceThreshold>1.0</DistanceThreshold>
     </NoiseCtrlParams>
      <PulseLimitParameter>
-        <MaxPluse>900</MaxPulse>
+        <MaxPluse>700</MaxPulse>
         <MinPluse>200</MinPulse>
     </PulseLimitParameter>
+    <DistanceLocalLimitParameter>
+        <MinDistanceLocal>0</MinDistanceLocal>
+    </DistanceLocalLimitParameter>
 </LimitParameterInfo>

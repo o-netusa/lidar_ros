@@ -13,7 +13,7 @@
         <FrameFrequency>10</FrameFrequency>
     </ViewFieldParameter>
     <LaserParameter>
-        <PowerType>3</PowerType>
+        <PowerType>6</PowerType>
         <PowerFactorType>5</PowerFactorType>
         <PulseWidthType>3</PulseWidthType>
     </LaserParameter>
@@ -21,39 +21,46 @@
         <EchoNumber>1</EchoNumber>
     </LaserEchoNumber>
     <Temperature>
-        <Value>39</Value>
+        <Value>45</Value>
     </Temperature>
     <SeedDac>
         <Value>720</Value>
     </SeedDac>
     <DcThreshold>
-        <dc_q>30</dc_q>
-        <dc_i>30</dc_i>
-        <threshold>100</threshold>
+        <dc_q>29</dc_q>
+        <dc_i>21</dc_i>
+        <threshold_q>90</threshold_q>
+        <threshold_i>68</threshold_i>
     </DcThreshold>
     <TimeWin>
-        <min>135</min>
-        <max>1900</max>
+        <min>125</min>
+        <max>1800</max>
     </TimeWin>
     <SourceDataType>
         <DataType>0</DataType>
     </SourceDataType>
     <GatherSize>
-        <gather_point_size>1920</gather_point_size>
+        <gather_point_size>1820</gather_point_size>
     </GatherSize>
     <AmplitudeExclude>
         <time_stamp>19200</time_stamp>
-        <amplitude_exclude>0</amplitude_exclude>
+        <amplitude_exclude>180</amplitude_exclude>
     </AmplitudeExclude>
     <GhostExclude>
-        <high_plusewidth>350</high_plusewidth>
-        <time_difference>150</time_difference>
+        <high_plusewidth>256</high_plusewidth>
+        <time_difference>125</time_difference>
     </GhostExclude>
     <PluseWidth>
-        <plusewidth_diff>120</plusewidth_diff>
+        <plusewidth_diff>100</plusewidth_diff>
         <time_fly>20000</time_fly>
     </PluseWidth>
-    <HardParameter>
+    <HardwareParameter>
         <code_wheel>20000</code_wheel>
-    </HardParameter>
+    </HardwareParameter>
+    <ColoringSheme>
+	<coefficient_k>-0.0164</coefficient_k>
+	<coefficient_b>630.28367</coefficient_b>
+	<distinguish_threshold>0.13</distinguish_threshold>
+	<base_color>1.0</base_color>
+    </ColoringSheme>
 </LidarParameterInfo>
