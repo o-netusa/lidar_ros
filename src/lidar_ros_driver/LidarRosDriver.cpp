@@ -21,8 +21,12 @@
 #include <processing/PointCloudProcessing.h>
 #include <rosbag/bag.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/PointCloud.h>
 
 #include <thread>
+
+#define USE_POINT_CLOUD_2 1
+#define USE_POINT_CLOUD_2_POINTXYZI 0
 
 namespace onet { namespace lidar_ros {
 
@@ -98,7 +102,11 @@ struct LidarRosDriver::Impl
         {
             ROS_ERROR("Error fetching parameters: %s", e.what());
         }
+#if USE_POINT_CLOUD_2
         m_cloud_pub = m_node.advertise<sensor_msgs::PointCloud2>(m_point_cloud_topic_name, 100);
+#else
+        m_cloud_pub = m_node.advertise<sensor_msgs::PointCloud>(m_point_cloud_topic_name, 100);
+#endif
 
         m_callback = [this](uint32_t frame_id, lidar::PointCloud<lidar::PointXYZI> &cloud) {
             HandlePointCloud(frame_id, cloud);
@@ -138,6 +146,9 @@ struct LidarRosDriver::Impl
             return;
         }
         cppbase::Timer<cppbase::us> timer;
+
+#if USE_POINT_CLOUD_2
+#if USE_POINT_CLOUD_2_POINTXYZI
         pcl::PointCloud<pcl::PointXYZI> pointcloud;
         pointcloud.points.resize(cloud.size());
         for (size_t i = 0; i < cloud.size(); ++i)
@@ -154,6 +165,68 @@ struct LidarRosDriver::Impl
         msg_pointcloud.header.frame_id = m_frame_id;
 
         m_cloud_pub.publish(msg_pointcloud);
+#else
+        sensor_msgs::PointCloud2 msg_pointcloud;
+        pcl::PointCloud<pcl::PointXYZRGB> pointcloud;
+        pointcloud.points.resize(cloud.size());
+        for (size_t i = 0; i < cloud.size(); ++i)
+        {
+            pcl::PointXYZRGB p;
+            const auto &pt = cloud.at(i);
+            p.x = pt[0];
+            p.y = pt[1];
+            p.z = pt[2];
+            int rgb = static_cast<int>(pt[3]);
+            p.r = (rgb >> 16) & 0xff;
+            p.g = (rgb >> 8) & 0xff;
+            p.b = rgb & 0xff;
+            pointcloud.points.emplace_back(p);
+        }
+        pcl::toROSMsg(pointcloud, msg_pointcloud);
+        msg_pointcloud.header.stamp = ros::Time::now();
+        msg_pointcloud.header.frame_id = m_frame_id;
+
+        m_cloud_pub.publish(msg_pointcloud);
+#endif
+#else
+        auto lidar_size = cloud.size();
+        sensor_msgs::PointCloud msg_pointcloud;
+        msg_pointcloud.header.stamp = ros::Time::now();
+        msg_pointcloud.header.frame_id = m_frame_id;
+        msg_pointcloud.points.resize(lidar_size);
+
+        msg_pointcloud.channels.resize(2);
+        msg_pointcloud.channels[0].name = "intensities";
+        msg_pointcloud.channels[0].values.resize(lidar_size);
+        msg_pointcloud.channels[1].name = "labels";
+        msg_pointcloud.channels[1].values.resize(lidar_size);
+
+        int cnt = 0;
+        for(size_t i = 0; i < lidar_size; ++i)
+        {
+            if(true)
+            {
+                msg_pointcloud.points[cnt].x = cloud[i][0];
+                msg_pointcloud.points[cnt].y = cloud[i][1];
+                msg_pointcloud.points[cnt].z = cloud[i][2];
+                msg_pointcloud.channels[0].values[cnt] = cloud[i][3];
+                msg_pointcloud.channels[1].values[cnt] = 0;
+                cnt++;
+            }
+            else if(false)
+            {
+                msg_pointcloud.points[cnt].x = cloud[i][0];
+                msg_pointcloud.points[cnt].y = cloud[i][1];
+                msg_pointcloud.points[cnt].z = cloud[i][2];
+                msg_pointcloud.channels[0].values[cnt] = cloud[i][3];
+                msg_pointcloud.channels[1].values[cnt] = 1;
+                cnt++;
+            }
+        }
+
+        m_cloud_pub.publish(msg_pointcloud);
+#endif
+
         ROS_INFO("end time:%d us", static_cast<int>(timer.Elapsed()));
         timer.Stop();
         if (m_save_bag)
