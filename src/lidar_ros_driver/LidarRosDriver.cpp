@@ -23,6 +23,8 @@
 #include <sensor_msgs/PointCloud2.h>
 
 #include <thread>
+#include <boost/date_time/gregorian/gregorian.hpp>
+#include <ctime>
 
 #define USE_POINT_CLOUD_2_POINTXYZI 0
 
@@ -138,7 +140,7 @@ struct LidarRosDriver::Impl
     std::string m_playback_file_path;
     int m_playback_fps{10};
 
-    std::function<void(uint32_t, onet::lidar::PointCloud<onet::lidar::PointXYZI> &)> m_callback{
+    std::function<void(uint32_t, onet::lidar::PointCloud<onet::lidar::PointXYZIT> &)> m_callback{
         nullptr};
 
     lidar::LidarDevice *m_lidar_device{nullptr};
@@ -171,7 +173,7 @@ struct LidarRosDriver::Impl
         }
         m_cloud_pub = m_node.advertise<sensor_msgs::PointCloud2>(m_point_cloud_topic_name, 100);
 
-        m_callback = [this](uint32_t frame_id, lidar::PointCloud<lidar::PointXYZI> &cloud) {
+        m_callback = [this](uint32_t frame_id, lidar::PointCloud<lidar::PointXYZIT> &cloud) {
             HandlePointCloud(frame_id, cloud);
         };
         if (m_save_bag)
@@ -202,7 +204,7 @@ struct LidarRosDriver::Impl
         }
     }
 
-    void HandlePointCloud(uint32_t frame_id, lidar::PointCloud<onet::lidar::PointXYZI> cloud)
+    void HandlePointCloud(uint32_t frame_id, lidar::PointCloud<onet::lidar::PointXYZIT> cloud)
     {
         if (cloud.empty())
         {
@@ -246,8 +248,16 @@ struct LidarRosDriver::Impl
             p.b = color_table[idx].m_b;
             pointcloud.points.emplace_back(p);
         }
+
         pcl::toROSMsg(pointcloud, msg_pointcloud);
-        msg_pointcloud.header.stamp = ros::Time::now();
+        
+	boost::gregorian::date now_date = boost::gregorian::day_clock::universal_day();
+	struct tm now_tm = boost::gregorian::to_tm(now_date);
+	now_tm.tm_hour = (cloud[0].utc >> 12) + 8;
+	now_tm.tm_min = (cloud[0].utc & 0xFC0) >> 6;
+	now_tm.tm_sec = cloud[0].utc & 0x3F;
+	double now_sec = (mktime(&now_tm)*1000000 + (cloud[0].time_stamp >> 10) * 1000 + (cloud[0].time_stamp & 0x3FF))/1000000.0;
+	msg_pointcloud.header.stamp = ros::Time(now_sec);
         msg_pointcloud.header.frame_id = m_frame_id;
 
         m_cloud_pub.publish(msg_pointcloud);
