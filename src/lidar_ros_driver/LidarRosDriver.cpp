@@ -138,7 +138,7 @@ struct LidarRosDriver::Impl
     std::string m_playback_file_path;
     int m_playback_fps{10};
 
-    std::function<void(uint32_t, onet::lidar::PointCloud<onet::lidar::PointXYZI> &)> m_callback{
+    std::function<void(uint32_t, onet::lidar::PointCloud<onet::lidar::PointXYZIT> &)> m_callback{
         nullptr};
 
     lidar::LidarDevice *m_lidar_device{nullptr};
@@ -171,7 +171,7 @@ struct LidarRosDriver::Impl
         }
         m_cloud_pub = m_node.advertise<sensor_msgs::PointCloud2>(m_point_cloud_topic_name, 100);
 
-        m_callback = [this](uint32_t frame_id, lidar::PointCloud<lidar::PointXYZI> &cloud) {
+        m_callback = [this](uint32_t frame_id, lidar::PointCloud<lidar::PointXYZIT> &cloud) {
             HandlePointCloud(frame_id, cloud);
         };
         if (m_save_bag)
@@ -202,7 +202,7 @@ struct LidarRosDriver::Impl
         }
     }
 
-    void HandlePointCloud(uint32_t frame_id, lidar::PointCloud<onet::lidar::PointXYZI> cloud)
+    void HandlePointCloud(uint32_t frame_id, lidar::PointCloud<onet::lidar::PointXYZIT> cloud)
     {
         if (cloud.empty())
         {
