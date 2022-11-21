@@ -23,6 +23,8 @@
 #include <sensor_msgs/PointCloud2.h>
 
 #include <thread>
+#include <boost/date_time/gregorian/gregorian.hpp>
+#include <ctime>
 
 #define USE_POINT_CLOUD_2_POINTXYZI 0
 
@@ -246,8 +248,16 @@ struct LidarRosDriver::Impl
             p.b = color_table[idx].m_b;
             pointcloud.points.emplace_back(p);
         }
+
         pcl::toROSMsg(pointcloud, msg_pointcloud);
-        msg_pointcloud.header.stamp = ros::Time::now();
+        
+	boost::gregorian::date now_date = boost::gregorian::day_clock::universal_day();
+	struct tm now_tm = boost::gregorian::to_tm(now_date);
+	now_tm.tm_hour = (cloud[0].utc >> 12) + 8;
+	now_tm.tm_min = (cloud[0].utc & 0xFC0) >> 6;
+	now_tm.tm_sec = cloud[0].utc & 0x3F;
+	double now_sec = (mktime(&now_tm)*1000000 + (cloud[0].time_stamp >> 10) * 1000 + (cloud[0].time_stamp & 0x3FF))/1000000.0;
+	msg_pointcloud.header.stamp = ros::Time(now_sec);
         msg_pointcloud.header.frame_id = m_frame_id;
 
         m_cloud_pub.publish(msg_pointcloud);
