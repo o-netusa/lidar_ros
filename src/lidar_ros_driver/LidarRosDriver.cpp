@@ -23,6 +23,8 @@
 #include <sensor_msgs/PointCloud2.h>
 
 #include <thread>
+#include <boost/date_time/gregorian/gregorian.hpp>
+#include <ctime>
 
 #define USE_POINT_CLOUD_2_POINTXYZI 0
 
@@ -131,6 +133,7 @@ struct LidarRosDriver::Impl
     ros::Publisher m_cloud_pub;    //点云发布者
     ros::Publisher m_param_pub;    //参数设置状态发布者
 
+    std::string m_param_dir{""};
     std::string m_point_cloud_topic_name{"lidar_point_cloud"};
     std::string m_frame_id{"lidar"};
     std::string m_device_ip{"192.168.1.2"};
@@ -138,7 +141,7 @@ struct LidarRosDriver::Impl
     std::string m_playback_file_path;
     int m_playback_fps{10};
 
-    std::function<void(uint32_t, onet::lidar::PointCloud<onet::lidar::PointXYZI> &)> m_callback{
+    std::function<void(uint32_t, onet::lidar::PointCloud<onet::lidar::PointXYZIT> &)> m_callback{
         nullptr};
 
     lidar::LidarDevice *m_lidar_device{nullptr};
@@ -147,15 +150,20 @@ struct LidarRosDriver::Impl
 
     void InitLidar(ros::NodeHandle node)
     {
-        m_auto_start = m_node.param<bool>("/onet_lidar_ros_driver/auto_start", m_auto_start);
-        m_save_bag = m_node.param<bool>("/onet_lidar_ros_driver/save_bag", m_save_bag);
+        std::string namespace_str = m_node.getNamespace();
+        m_auto_start = m_node.param<bool>(namespace_str + "/onet_lidar_ros_driver/auto_start", m_auto_start);
+        m_save_bag = m_node.param<bool>(namespace_str + "/onet_lidar_ros_driver/save_bag", m_save_bag);
         m_point_cloud_topic_name = m_node.param<std::string>(
-            "/onet_lidar_ros_driver/point_cloud_topic_name", m_point_cloud_topic_name);
-        m_device_ip = m_node.param<std::string>("/onet_lidar_ros_driver/device_ip", m_device_ip);
-        m_port = m_node.param<int>("/onet_lidar_ros_driver/port", m_port);
-        m_frame_id = m_node.param<std::string>("/onet_lidar_ros_driver/frame_id", m_frame_id);
+            namespace_str + "/onet_lidar_ros_driver/point_cloud_topic_name", m_point_cloud_topic_name);
+        m_device_ip = m_node.param<std::string>(namespace_str + "/onet_lidar_ros_driver/device_ip", m_device_ip);
+        m_port = m_node.param<int>(namespace_str + "/onet_lidar_ros_driver/port", m_port);
+        m_frame_id = m_node.param<std::string>(namespace_str + "/onet_lidar_ros_driver/frame_id", m_frame_id);
         m_playback_file_path = m_node.param<std::string>(
-            "/onet_lidar_ros_driver/playback_file_path", m_playback_file_path);
+            namespace_str + "/onet_lidar_ros_driver/playback_file_path", m_playback_file_path);
+        m_param_dir = m_node.param<std::string>(
+            namespace_str + "/onet_lidar_ros_driver/param_path", m_param_dir);
+
+        ROS_INFO("Config file path: %s", m_param_dir.c_str());
     }
 
     Impl(ros::NodeHandle node) : m_node(node)
@@ -171,7 +179,7 @@ struct LidarRosDriver::Impl
         }
         m_cloud_pub = m_node.advertise<sensor_msgs::PointCloud2>(m_point_cloud_topic_name, 100);
 
-        m_callback = [this](uint32_t frame_id, lidar::PointCloud<lidar::PointXYZI> &cloud) {
+        m_callback = [this](uint32_t frame_id, lidar::PointCloud<lidar::PointXYZIT> &cloud) {
             HandlePointCloud(frame_id, cloud);
         };
         if (m_save_bag)
@@ -202,10 +210,11 @@ struct LidarRosDriver::Impl
         }
     }
 
-    void HandlePointCloud(uint32_t frame_id, lidar::PointCloud<onet::lidar::PointXYZI> cloud)
+    void HandlePointCloud(uint32_t frame_id, lidar::PointCloud<onet::lidar::PointXYZIT> cloud)
     {
         if (cloud.empty())
         {
+            ROS_ERROR("*******No points in cloud*********");
             return;
         }
         cppbase::Timer<cppbase::us> timer;
@@ -246,8 +255,22 @@ struct LidarRosDriver::Impl
             p.b = color_table[idx].m_b;
             pointcloud.points.emplace_back(p);
         }
+
         pcl::toROSMsg(pointcloud, msg_pointcloud);
-        msg_pointcloud.header.stamp = ros::Time::now();
+
+        /*FPGA返回的GPS时间不带有年月日，先使用boost库获取系统的年月日，
+        **然后转换成struct tm，和GPS时间（时分秒毫秒微妙）进行拼接，
+        **再转换成ros::Time
+        **/
+        boost::gregorian::date now_date = boost::gregorian::day_clock::universal_day();
+        struct tm now_tm = boost::gregorian::to_tm(now_date);
+        now_tm.tm_hour = (cloud[0].utc >> 12) + 8;
+        now_tm.tm_min = (cloud[0].utc & 0xFC0) >> 6;
+        now_tm.tm_sec = cloud[0].utc & 0x3F;
+        double now_sec = (mktime(&now_tm) * 1000000 + (cloud[0].time_stamp >> 10) * 1000 +
+                          (cloud[0].time_stamp & 0x3FF)) /
+                         1000000.0;
+        msg_pointcloud.header.stamp = ros::Time(now_sec);
         msg_pointcloud.header.frame_id = m_frame_id;
 
         m_cloud_pub.publish(msg_pointcloud);
@@ -280,6 +303,7 @@ struct LidarRosDriver::Impl
             }
             try
             {
+                m_playback_device->SetConfigDir(m_param_dir);
                 m_playback_device->Init();
                 m_playback_device->SetFPS(10);
                 m_playback_device->RegisterPointCloudCallback(m_callback);
@@ -302,6 +326,7 @@ struct LidarRosDriver::Impl
             }
             try
             {
+                m_lidar_device->SetConfigDir(m_param_dir);
                 m_lidar_device->Init();
 
                 m_lidar_device->RegisterPointCloudCallback(m_callback);
