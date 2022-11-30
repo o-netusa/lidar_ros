@@ -12,7 +12,7 @@ set(CPPBASE_BUILD_GTEST OFF)
 download_project(
   PROJ     cppbase
   URL      ${CMAKE_CURRENT_SOURCE_DIR}/cppbase/cppbase.tar.gz
-  URL_HASH MD5=a4ea4f139345d4808787b124049642e2
+  URL_HASH MD5=bf802084d59b14033eae6ffb8a34a2be
   QUIET
 )
 add_subdirectory(${cppbase_SOURCE_DIR} ${cppbase_BINARY_DIR})
@@ -26,7 +26,7 @@ message("==> Configuring lidardevice")
 download_project(
   PROJ     lidardevice
   URL      ${CMAKE_CURRENT_SOURCE_DIR}/lidardevice/LidarDevice-1.0.0-x86_64_Linux.tar.gz
-  URL_HASH MD5=23887e9c23837e28b025978564e409f3
+  URL_HASH MD5=e688462b2c68b7ee23f45b712419d04d
   QUIET
 )
 add_library(lidardevice INTERFACE)

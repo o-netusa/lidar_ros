@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<LimitParameterInfo>
+    <EchoParameter>
+        <EchoMax>1</EchoMax>
+        <EchoMin>4</EchoMin>
+    </EchoParameter>
+	<FactorParameter>
+        <FactorMin>1</FactorMin>
+        <FactorMax>10</FactorMax>
+    </FactorParameter>
+    <LimitParameter>
+        <MaxStep>500</MaxStep>
+        <MaxSpeed>7200</MaxSpeed>
+        <SignelStepAngle>1</SignelStepAngle>
+    </LimitParameter>
+	<TimeControlParameter>
+        <MaxTime>800</MaxTime>
+        <MinTime>15</MinTime>
+    </TimeControlParameter>
+    <DistanceParameter>
+        <MaxTime1>1800</MaxTime1>
+    </DistanceParameter>
+    <PermissionsParameter>
+        <Permissions>2</Permissions>
+    </PermissionsParameter>
+    <NoiseCtrlParams>
+        <EnableRemoveNoise>1</EnableRemoveNoise>
+        <AreaSq>0.5</AreaSq>
+        <Range>20</Range>
+        <DistanceThreshold>1.0</DistanceThreshold>
+    </NoiseCtrlParams>
+     <PulseLimitParameter>
+        <MaxPluse>540</MaxPulse>
+        <MinPluse>200</MinPulse>
+    </PulseLimitParameter>
+    <DistanceLocalLimitParameter>
+        <MinDistanceLocal>0</MinDistanceLocal>
+    </DistanceLocalLimitParameter>
+</LimitParameterInfo>

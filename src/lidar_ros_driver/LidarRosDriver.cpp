@@ -133,6 +133,7 @@ struct LidarRosDriver::Impl
     ros::Publisher m_cloud_pub;    //点云发布者
     ros::Publisher m_param_pub;    //参数设置状态发布者
 
+    std::string m_param_dir{""};
     std::string m_point_cloud_topic_name{"lidar_point_cloud"};
     std::string m_frame_id{"lidar"};
     std::string m_device_ip{"192.168.1.2"};
@@ -149,15 +150,20 @@ struct LidarRosDriver::Impl
 
     void InitLidar(ros::NodeHandle node)
     {
-        m_auto_start = m_node.param<bool>("/onet_lidar_ros_driver/auto_start", m_auto_start);
-        m_save_bag = m_node.param<bool>("/onet_lidar_ros_driver/save_bag", m_save_bag);
+        std::string namespace_str = m_node.getNamespace();
+        m_auto_start = m_node.param<bool>(namespace_str + "/onet_lidar_ros_driver/auto_start", m_auto_start);
+        m_save_bag = m_node.param<bool>(namespace_str + "/onet_lidar_ros_driver/save_bag", m_save_bag);
         m_point_cloud_topic_name = m_node.param<std::string>(
-            "/onet_lidar_ros_driver/point_cloud_topic_name", m_point_cloud_topic_name);
-        m_device_ip = m_node.param<std::string>("/onet_lidar_ros_driver/device_ip", m_device_ip);
-        m_port = m_node.param<int>("/onet_lidar_ros_driver/port", m_port);
-        m_frame_id = m_node.param<std::string>("/onet_lidar_ros_driver/frame_id", m_frame_id);
+            namespace_str + "/onet_lidar_ros_driver/point_cloud_topic_name", m_point_cloud_topic_name);
+        m_device_ip = m_node.param<std::string>(namespace_str + "/onet_lidar_ros_driver/device_ip", m_device_ip);
+        m_port = m_node.param<int>(namespace_str + "/onet_lidar_ros_driver/port", m_port);
+        m_frame_id = m_node.param<std::string>(namespace_str + "/onet_lidar_ros_driver/frame_id", m_frame_id);
         m_playback_file_path = m_node.param<std::string>(
-            "/onet_lidar_ros_driver/playback_file_path", m_playback_file_path);
+            namespace_str + "/onet_lidar_ros_driver/playback_file_path", m_playback_file_path);
+        m_param_dir = m_node.param<std::string>(
+            namespace_str + "/onet_lidar_ros_driver/param_path", m_param_dir);
+
+        ROS_INFO("Config file path: %s", m_param_dir.c_str());
     }
 
     Impl(ros::NodeHandle node) : m_node(node)
@@ -208,6 +214,7 @@ struct LidarRosDriver::Impl
     {
         if (cloud.empty())
         {
+            ROS_ERROR("*******No points in cloud*********");
             return;
         }
         cppbase::Timer<cppbase::us> timer;
@@ -296,6 +303,7 @@ struct LidarRosDriver::Impl
             }
             try
             {
+                m_playback_device->SetConfigDir(m_param_dir);
                 m_playback_device->Init();
                 m_playback_device->SetFPS(10);
                 m_playback_device->RegisterPointCloudCallback(m_callback);
@@ -318,6 +326,7 @@ struct LidarRosDriver::Impl
             }
             try
             {
+                m_lidar_device->SetConfigDir(m_param_dir);
                 m_lidar_device->Init();
 
                 m_lidar_device->RegisterPointCloudCallback(m_callback);
