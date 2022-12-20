@@ -17,16 +17,14 @@
 #include <common/FileSystem.h>
 #include <common/Timer.h>
 #include <config/DeviceParamsConfig.h>
-#include <pcl_conversions/pcl_conversions.h>
 #include <processing/PointCloudProcessing.h>
 #include <rosbag/bag.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/point_cloud2_iterator.h>
 
 #include <thread>
 #include <boost/date_time/gregorian/gregorian.hpp>
 #include <ctime>
-
-#define USE_POINT_CLOUD_2_POINTXYZI 0
 
 namespace onet { namespace lidar_ros {
 	
@@ -219,56 +217,77 @@ struct LidarRosDriver::Impl
         }
         cppbase::Timer<cppbase::us> timer;
 
-#if USE_POINT_CLOUD_2_POINTXYZI
-        pcl::PointCloud<pcl::PointXYZI> pointcloud;
-        pointcloud.points.resize(cloud.size());
-        for (size_t i = 0; i < cloud.size(); ++i)
-        {
-            const auto &pt = cloud.at(i);
-            pointcloud.points[i].x = pt[0];
-            pointcloud.points[i].y = pt[1];
-            pointcloud.points[i].z = pt[2];
-            pointcloud.points[i].intensity = pt[3];
-        }
+        // POINTXYZIRGBT
         sensor_msgs::PointCloud2 msg_pointcloud;
-        pcl::toROSMsg(pointcloud, msg_pointcloud);
-        msg_pointcloud.header.stamp = ros::Time::now();
-        msg_pointcloud.header.frame_id = m_frame_id;
 
-        m_cloud_pub.publish(msg_pointcloud);
-#else
-        sensor_msgs::PointCloud2 msg_pointcloud;
-        pcl::PointCloud<pcl::PointXYZRGB> pointcloud;
-        pointcloud.points.resize(cloud.size());
-		
-		//make sure that pt[3] <= 1 and pt[3] >= 0 
-        for (size_t i = 0; i < cloud.size(); ++i)
-        {
-            pcl::PointXYZRGB p;
-            const auto &pt = cloud.at(i);
-            p.x = pt[0];
-            p.y = pt[1];
-            p.z = pt[2];
-            int idx = static_cast<int>(pt[3] * 255.0f);
-            p.r = color_table[idx].m_r;
-            p.g = color_table[idx].m_g;
-            p.b = color_table[idx].m_b;
-            pointcloud.points.emplace_back(p);
-        }
+        int fields = 9;
+        msg_pointcloud.fields.clear();
+        msg_pointcloud.fields.reserve(fields);
 
-        pcl::toROSMsg(pointcloud, msg_pointcloud);
+        // send by row
+        msg_pointcloud.width = cloud.size();
+        msg_pointcloud.height = 1;
+
+        int offset = 0;
+        offset = addPointField(msg_pointcloud, "x", 1, sensor_msgs::PointField::FLOAT32, offset);
+        offset = addPointField(msg_pointcloud, "y", 1, sensor_msgs::PointField::FLOAT32, offset);
+        offset = addPointField(msg_pointcloud, "z", 1, sensor_msgs::PointField::FLOAT32, offset);
+        offset = addPointField(msg_pointcloud, "intensity", 1, sensor_msgs::PointField::FLOAT32, offset);
+        offset = addPointField(msg_pointcloud, "rgb", 1, sensor_msgs::PointField::UINT32, offset);
+        offset = addPointField(msg_pointcloud, "utc_time", 1, sensor_msgs::PointField::UINT32, offset);
+        offset = addPointField(msg_pointcloud, "ms_time", 1, sensor_msgs::PointField::UINT32, offset);
+
+        msg_pointcloud.point_step = offset;
+        msg_pointcloud.row_step = msg_pointcloud.width * msg_pointcloud.point_step;
+        msg_pointcloud.is_dense = true; // not containing NAN 
+        msg_pointcloud.data.resize(msg_pointcloud.point_step * msg_pointcloud.width * msg_pointcloud.height);
+
+        sensor_msgs::PointCloud2Iterator<float> iter_x(msg_pointcloud, "x");
+        sensor_msgs::PointCloud2Iterator<float> iter_y(msg_pointcloud, "y");
+        sensor_msgs::PointCloud2Iterator<float> iter_z(msg_pointcloud, "z");
+        sensor_msgs::PointCloud2Iterator<float> iter_intensity(msg_pointcloud, "intensity");
+        sensor_msgs::PointCloud2Iterator<uint32_t> iter_rgb(msg_pointcloud, "rgb");
+        sensor_msgs::PointCloud2Iterator<uint32_t> iter_utc_time(msg_pointcloud, "utc_time");
+        sensor_msgs::PointCloud2Iterator<uint32_t> iter_ms_time(msg_pointcloud, "ms_time");
+
         
-	boost::gregorian::date now_date = boost::gregorian::day_clock::universal_day();
-	struct tm now_tm = boost::gregorian::to_tm(now_date);
-	now_tm.tm_hour = (cloud[0].utc >> 12) + 8;
-	now_tm.tm_min = (cloud[0].utc & 0xFC0) >> 6;
-	now_tm.tm_sec = cloud[0].utc & 0x3F;
-	double now_sec = (mktime(&now_tm)*1000000 + (cloud[0].time_stamp >> 10) * 1000 + (cloud[0].time_stamp & 0x3FF))/1000000.0;
-	msg_pointcloud.header.stamp = ros::Time(now_sec);
+        for (size_t i = 0; i < cloud.size(); ++i)
+        {
+            const auto &pt = cloud.at(i);
+            *iter_x = pt[0];
+            *iter_y = pt[1];
+            *iter_z = pt[2];
+            *iter_intensity = pt[3];
+            int idx = static_cast<int>(pt[3] * 255.0f);
+            *iter_rgb = color_table[idx].m_rgb;
+            *iter_utc_time = pt.utc;
+            *iter_ms_time = pt.time_stamp;
+
+            ++iter_x;
+            ++iter_y;
+            ++iter_z;
+            ++iter_intensity;
+            ++iter_rgb;
+            ++iter_utc_time;
+            ++iter_ms_time;
+        }
+
+        /*FPGA返回的GPS时间不带有年月日，先使用boost库获取系统的年月日，
+        **然后转换成struct tm，和GPS时间（时分秒毫秒微妙）进行拼接，
+        **再转换成ros::Time
+        **/
+        boost::gregorian::date now_date = boost::gregorian::day_clock::universal_day();
+        struct tm now_tm = boost::gregorian::to_tm(now_date);
+        now_tm.tm_hour = (cloud[0].utc >> 12) + 8;
+        now_tm.tm_min = (cloud[0].utc & 0xFC0) >> 6;
+        now_tm.tm_sec = cloud[0].utc & 0x3F;
+        double now_sec = (mktime(&now_tm) * 1000000 + (cloud[0].time_stamp >> 10) * 1000 +
+                        (cloud[0].time_stamp & 0x3FF)) /
+                        1000000.0;
+        msg_pointcloud.header.stamp = ros::Time(now_sec);
         msg_pointcloud.header.frame_id = m_frame_id;
 
         m_cloud_pub.publish(msg_pointcloud);
-#endif
 
         ROS_INFO("end time:%d us", static_cast<int>(timer.Elapsed()));
         timer.Stop();

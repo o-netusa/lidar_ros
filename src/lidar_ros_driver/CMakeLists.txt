@@ -24,6 +24,7 @@ install(TARGETS ${PROJECT_NAME}
     RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 install(FILES ${lidardevice_SOURCE_DIR}/lib/libLidarDevice.so DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
+install(FILES point_types.h LidarRosDriver.h DESTINATION include)
 
 # install config and launch files
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/config DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}/lidar_ros_driver)
