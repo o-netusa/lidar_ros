@@ -1,38 +1,49 @@
 <launch>
+    <!-- true: 自动开启 RViz-->
+    <arg name="rviz" default="false" /> 
 
-    <arg name="rviz" default="true" /> <!-- true: 自动开启 RViz-->
-
-    <arg name="point_cloud_topic_name" default="lidar_point_cloud" />
-    <arg name="frame_id" default="lidar" />
-    <arg name="device_ip" default="192.168.1.2" />
-    <arg name="port" default="2368" />
-    <arg name="playback_file_path" default="" /> <!-- 回访文件路径用于测试，连接激光雷达必须将此路径清空 -->
-    <arg name="auto_start" default="true" />
-    <arg name="save_bag" default="true" />
-    <arg name="near_noise_dist" default="19200" />
-    <arg name="near_noise_intensity" default="135" />
-    <arg name="time_dif" default="200" />
-    <arg name="high_pul" default="350" />
-    <arg name="time_fly" default="19200" />
-    <arg name="pulse_dif" default="124" />
-    <arg name="sample_rate" default="500" />
-    <node pkg="lidar_ros_driver" type="lidar_ros_driver" name="onet_lidar_ros_driver" output="screen" cwd="node" respawn="false">
-        <param name="point_cloud_topic_name" type="string" value="$(arg point_cloud_topic_name)" />
-        <param name="frame_id" type="string" value="$(arg frame_id)" />
-        <param name="device_ip" type="string" value="$(arg device_ip)" />
-        <param name="port" type="int" value="$(arg port)" />
-        <param name="playback_file_path" type="string" value="$(arg playback_file_path)" />
-        <param name="auto_start" type="bool" value="$(arg auto_start)" />
-        <param name="save_bag" type="bool" value="$(arg save_bag)" />
-        <param name="near_noise_dist" type="int" value="$(arg near_noise_dist)" />
-        <param name="near_noise_intensity" type="int" value="$(arg near_noise_intensity)" />
-        <param name="time_dif" type="int" value="$(arg time_dif)" />
-        <param name="high_pul" type="int" value="$(arg high_pul)" />
-        <param name="time_fly" type="int" value="$(arg time_fly)" />
-        <param name="pulse_dif" type="int" value="$(arg pulse_dif)" />
-        <param name="sample_rate" type="int" value="$(arg sample_rate)" />
-    </node>
-
+    <group ns="lidar1">
+        <arg name="point_cloud_topic_name" default="lidar_point_cloud1" />
+        <arg name="frame_id" default="lidar1" />
+        <arg name="device_ip" default="1.1.103.6" />
+        <arg name="port" default="2368" />
+        <!-- 回访文件路径用于测试，连接激光雷达必须将此路径清空 -->
+        <arg name="playback_file_path" default="" /> 
+        <arg name="auto_start" default="true" />
+        <arg name="save_bag" default="false" />
+        <arg name="param_path" default="$(find lidar_ros_driver)/config1" doc="this is a param path" />
+        <node pkg="lidar_ros_driver" type="lidar_ros_driver" name="onet_lidar_ros_driver" output="screen" cwd="node" respawn="false">
+            <param name="point_cloud_topic_name" type="string" value="$(arg point_cloud_topic_name)" />
+            <param name="frame_id" type="string" value="$(arg frame_id)" />
+            <param name="device_ip" type="string" value="$(arg device_ip)" />
+            <param name="port" type="int" value="$(arg port)" />
+            <param name="playback_file_path" type="string" value="$(arg playback_file_path)" />
+            <param name="auto_start" type="bool" value="$(arg auto_start)" />
+            <param name="save_bag" type="bool" value="$(arg save_bag)" />
+            <param name="param_path" type="string" value="$(arg param_path)" />
+        </node>
+    </group>
+    <group ns="lidar5">
+        <arg name="point_cloud_topic_name" default="lidar_point_cloud5" />
+        <arg name="frame_id" default="lidar5" />
+        <arg name="device_ip" default="1.1.103.2" />
+        <arg name="port" default="2368" />
+        <!-- 回访文件路径用于测试，连接激光雷达必须将此路径清空 -->
+        <arg name="playback_file_path" default="" /> 
+        <arg name="auto_start" default="true" />
+        <arg name="save_bag" default="false" />
+        <arg name="param_path" default="$(find lidar_ros_driver)/config5" doc="this is a param path" />
+        <node pkg="lidar_ros_driver" type="lidar_ros_driver" name="onet_lidar_ros_driver" output="screen" cwd="node" respawn="false">
+            <param name="point_cloud_topic_name" type="string" value="$(arg point_cloud_topic_name)" />
+            <param name="frame_id" type="string" value="$(arg frame_id)" />
+            <param name="device_ip" type="string" value="$(arg device_ip)" />
+            <param name="port" type="int" value="$(arg port)" />
+            <param name="playback_file_path" type="string" value="$(arg playback_file_path)" />
+            <param name="auto_start" type="bool" value="$(arg auto_start)" />
+            <param name="save_bag" type="bool" value="$(arg save_bag)" />
+            <param name="param_path" type="string" value="$(arg param_path)" />
+        </node>
+    </group>
     <group if="$(arg rviz)">
     <node launch-prefix="nice" pkg="rviz" type="rviz" name="rviz" args="-d $(find lidar_ros_driver)/config/onet_lidar.rviz" />
     </group>

@@ -1,0 +1,6 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<LidarParameterInfo>
+    <Distance Name="70" PowerType="3" min="128" max="600" gather_point_size="608" PowerFactorType="2"/>  <!-- PowerType-150 -->
+    <Distance Name="100" PowerType="3" min="128" max="800" gather_point_size="808" PowerFactorType="3"/>  <!-- PowerType-200 -->
+    <Distance Name="150" PowerType="4" min="128" max="1152" gather_point_size="1184" PowerFactorType="4"/>  <!-- PowerType-250 -->
+</LidarParameterInfo>

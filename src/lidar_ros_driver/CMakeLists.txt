@@ -1,7 +1,6 @@
 add_library(lidar_ros LidarRosDriver.cpp)
 target_compile_features(lidar_ros PRIVATE ${CXX_STD})
 target_link_libraries(lidar_ros PUBLIC lidardevice eigen sigslot stduuid ${catkin_LIBRARIES})
-add_dependencies(lidar_ros common_msgs_generate_messages_cpp)
 
 add_executable(lidar_ros_driver LidarRosNode.cpp)
 target_compile_features(lidar_ros_driver PRIVATE ${CXX_STD})
@@ -25,6 +24,7 @@ install(TARGETS ${PROJECT_NAME}
     RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 install(FILES ${lidardevice_SOURCE_DIR}/lib/libLidarDevice.so DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
+install(FILES point_types.h LidarRosDriver.h DESTINATION include)
 
 # install config and launch files
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/config DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}/lidar_ros_driver)

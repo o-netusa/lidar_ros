@@ -1,5 +1,0 @@
-bool   state
-string type
----
-bool   success
-string error

@@ -6,15 +6,13 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CXX_STD cxx_std_17)
 
-add_subdirectory(common_msgs)
+option(LIDAR_ROS_ENABLE_TEST "Enable unit tests" OFF)
 
 find_package(catkin REQUIRED COMPONENTS
   message_generation
   roscpp
   sensor_msgs
   std_msgs
-  message_generation
-  common_msgs
   rosbag
   pcl_conversions
 )
@@ -30,7 +28,7 @@ add_subdirectory(external)
 ###################################
 catkin_package(
   LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS roscpp std_msgs sensor_msgs message_runtime common_msgs rosbag
+  CATKIN_DEPENDS roscpp std_msgs sensor_msgs rosbag
 #  DEPENDS
 )
 
@@ -46,15 +44,14 @@ include_directories(
 )
 
 add_subdirectory(lidar_ros_driver)
-add_subdirectory(test_node)
 
 #############
 ## Testing ##
 #############
-if(CATKIN_ENABLE_TESTING)
+if(LIDAR_ROS_ENABLE_TEST)
     enable_testing()
     add_subdirectory(tests)
-endif(CATKIN_ENABLE_TESTING)
+endif()
 
 #############
 ## Install ##
@@ -66,4 +63,4 @@ set(CPACK_PACKAGE_VERSION_MINOR "${lidar_ros_driver_VERSION_MINOR}")
 set(CPACK_PACKAGE_VENDOR "ONET")
 
 include(ClangFormat)
-clang_format_recurse("lidar_ros_driver" "test_node" "tests")
+clang_format_recurse("lidar_ros_driver" "tests")
