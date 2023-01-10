@@ -76,3 +76,26 @@ boost::gregorian::date now_date = boost::gregorian::day_clock::universal_day();
                         (point.time_stamp & 0x3FF)) /
                         1000000.0;
 ```
+
+
+## 支持启动多台雷达
+
+1.启动单台
+
+launch文件示例见./src/launch/single.launch
+
+2.启动多台
+
+launch文件示例见./src/launch/multiple.launch
+
+3.多台launch文件修改
+如果新增一台雷达，可以在launch文件中添加一个group，ns取值自定义，最好统一，如添加第10台雷达，修改如下：
+
+group ns修改，ns="lidar10"
+
+point_cloud_topic_name修改，default="lidar_point_cloud10"
+
+frame_id修改，default="lidar10
+
+param_path修改, default="$(find lidar_ros_driver)/config10"，在src目录下添加配置参数目录config10
+
