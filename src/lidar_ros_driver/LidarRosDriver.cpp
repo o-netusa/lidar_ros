@@ -278,7 +278,7 @@ struct LidarRosDriver::Impl
         **/
         boost::gregorian::date now_date = boost::gregorian::day_clock::universal_day();
         struct tm now_tm = boost::gregorian::to_tm(now_date);
-        now_tm.tm_hour = (cloud[0].utc >> 12) + 8;
+        now_tm.tm_hour = ((cloud[0].utc & 0x1F000) >> 12) + 8;
         now_tm.tm_min = (cloud[0].utc & 0xFC0) >> 6;
         now_tm.tm_sec = cloud[0].utc & 0x3F;
         double now_sec = (mktime(&now_tm) * 1000000 + (cloud[0].time_stamp >> 10) * 1000 +
