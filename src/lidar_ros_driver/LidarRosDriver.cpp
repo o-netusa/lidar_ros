@@ -27,75 +27,6 @@
 #include <ctime>
 
 namespace onet { namespace lidar_ros {
-	
-struct Rgb
-{
-    Rgb(const float r, const float g, const float b)
-    {
-        m_r = static_cast<uint8_t>(r * 255);
-        m_g = static_cast<uint8_t>(g * 255);
-        m_b = static_cast<uint8_t>(b * 255);
-        m_rgb = static_cast<uint32_t>((m_r << 16) + (m_g << 8) + m_b);
-    }
-    uint8_t m_r;
-    uint8_t m_g;
-    uint8_t m_b;
-    uint32_t m_rgb;
-};
-
-Rgb color_table[256] = {
-    Rgb(0, 0.501961, 1),  Rgb(0, 0.509725, 1),  Rgb(0, 0.51749, 1),    Rgb(0, 0.525255, 1),   Rgb(0, 0.53302, 1),
-    Rgb(0, 0.540784, 1),  Rgb(0, 0.548549, 1),  Rgb(0, 0.556314, 1),   Rgb(0, 0.564078, 1),   Rgb(0, 0.571843, 1),
-    Rgb(0, 0.579608, 1),  Rgb(0, 0.587373, 1),  Rgb(0, 0.595137, 1),   Rgb(0, 0.602902, 1),   Rgb(0, 0.610667, 1),
-    Rgb(0, 0.618431, 1),  Rgb(0, 0.626196, 1),  Rgb(0, 0.633961, 1),   Rgb(0, 0.641725, 1),   Rgb(0, 0.64949, 1),
-    Rgb(0, 0.657255, 1),  Rgb(0, 0.66502, 1),   Rgb(0, 0.672784, 1),   Rgb(0, 0.680549, 1),   Rgb(0, 0.688314, 1),
-    Rgb(0, 0.696078, 1),  Rgb(0, 0.703843, 1),  Rgb(0, 0.711608, 1),   Rgb(0, 0.719373, 1),   Rgb(0, 0.727137, 1),
-    Rgb(0, 0.734902, 1),  Rgb(0, 0.742667, 1),  Rgb(0, 0.750431, 1),   Rgb(0, 0.758196, 1),   Rgb(0, 0.765961, 1),
-    Rgb(0, 0.773726, 1),  Rgb(0, 0.78149, 1),   Rgb(0, 0.789255, 1),   Rgb(0, 0.79702, 1),    Rgb(0, 0.804784, 1),
-    Rgb(0, 0.812549, 1),  Rgb(0, 0.820314, 1),  Rgb(0, 0.828078, 1),   Rgb(0, 0.835843, 1),   Rgb(0, 0.843608, 1),
-    Rgb(0, 0.851373, 1),  Rgb(0, 0.859137, 1),  Rgb(0, 0.866902, 1),   Rgb(0, 0.874667, 1),   Rgb(0, 0.882431, 1),
-    Rgb(0, 0.890196, 1),  Rgb(0, 0.897961, 1),  Rgb(0, 0.905726, 1),   Rgb(0, 0.91349, 1),    Rgb(0, 0.921255, 1),
-    Rgb(0, 0.92902, 1),   Rgb(0, 0.936784, 1),  Rgb(0, 0.944549, 1),   Rgb(0, 0.952314, 1),   Rgb(0, 0.960078, 1),
-    Rgb(0, 0.967843, 1),  Rgb(0, 0.975608, 1),  Rgb(0, 0.983373, 1),   Rgb(0, 0.991137, 1),   Rgb(0, 1, 0.996078),
-    Rgb(0, 1, 0.980392),  Rgb(0, 1, 0.964706),  Rgb(0, 1, 0.94902),    Rgb(0, 1, 0.933333),   Rgb(0, 1, 0.917647),
-    Rgb(0, 1, 0.901961),  Rgb(0, 1, 0.886275),  Rgb(0, 1, 0.870588),   Rgb(0, 1, 0.854902),   Rgb(0, 1, 0.839216),
-    Rgb(0, 1, 0.823529),  Rgb(0, 1, 0.807843),  Rgb(0, 1, 0.792157),   Rgb(0, 1, 0.776471),   Rgb(0, 1, 0.760784),
-    Rgb(0, 1, 0.745098),  Rgb(0, 1, 0.729412),  Rgb(0, 1, 0.713726),   Rgb(0, 1, 0.698039),   Rgb(0, 1, 0.682353),
-    Rgb(0, 1, 0.666667),  Rgb(0, 1, 0.65098),   Rgb(0, 1, 0.635294),   Rgb(0, 1, 0.619608),   Rgb(0, 1, 0.603922),
-    Rgb(0, 1, 0.588235),  Rgb(0, 1, 0.572549),  Rgb(0, 1, 0.556863),   Rgb(0, 1, 0.541176),   Rgb(0, 1, 0.52549),
-    Rgb(0, 1, 0.509804),  Rgb(0, 1, 0.494118),  Rgb(0, 1, 0.478431),   Rgb(0, 1, 0.462745),   Rgb(0, 1, 0.447059),
-    Rgb(0, 1, 0.431373),  Rgb(0, 1, 0.415686),  Rgb(0, 1, 0.4),        Rgb(0, 1, 0.384314),   Rgb(0, 1, 0.368627),
-    Rgb(0, 1, 0.352941),  Rgb(0, 1, 0.337255),  Rgb(0, 1, 0.321569),   Rgb(0, 1, 0.305882),   Rgb(0, 1, 0.290196),
-    Rgb(0, 1, 0.27451),   Rgb(0, 1, 0.258824),  Rgb(0, 1, 0.243137),   Rgb(0, 1, 0.227451),   Rgb(0, 1, 0.211765),
-    Rgb(0, 1, 0.196078),  Rgb(0, 1, 0.180392),  Rgb(0, 1, 0.164706),   Rgb(0, 1, 0.14902),    Rgb(0, 1, 0.133333),
-    Rgb(0, 1, 0.117647),  Rgb(0, 1, 0.101961),  Rgb(0, 1, 0.0862745),  Rgb(0, 1, 0.0705882),  Rgb(0, 1, 0.054902),
-    Rgb(0, 1, 0.0392157), Rgb(0, 1, 0.0235294), Rgb(0, 1, 0.00784314), Rgb(0.00784314, 1, 0), Rgb(0.0235294, 1, 0),
-    Rgb(0.0392157, 1, 0), Rgb(0.054902, 1, 0),  Rgb(0.0705882, 1, 0),  Rgb(0.0862745, 1, 0),  Rgb(0.101961, 1, 0),
-    Rgb(0.117647, 1, 0),  Rgb(0.133333, 1, 0),  Rgb(0.14902, 1, 0),    Rgb(0.164706, 1, 0),   Rgb(0.180392, 1, 0),
-    Rgb(0.196078, 1, 0),  Rgb(0.211765, 1, 0),  Rgb(0.227451, 1, 0),   Rgb(0.243137, 1, 0),   Rgb(0.258824, 1, 0),
-    Rgb(0.27451, 1, 0),   Rgb(0.290196, 1, 0),  Rgb(0.305882, 1, 0),   Rgb(0.321569, 1, 0),   Rgb(0.337255, 1, 0),
-    Rgb(0.352941, 1, 0),  Rgb(0.368627, 1, 0),  Rgb(0.384314, 1, 0),   Rgb(0.4, 1, 0),        Rgb(0.415686, 1, 0),
-    Rgb(0.431373, 1, 0),  Rgb(0.447059, 1, 0),  Rgb(0.462745, 1, 0),   Rgb(0.478431, 1, 0),   Rgb(0.494118, 1, 0),
-    Rgb(0.509804, 1, 0),  Rgb(0.52549, 1, 0),   Rgb(0.541176, 1, 0),   Rgb(0.556863, 1, 0),   Rgb(0.572549, 1, 0),
-    Rgb(0.588235, 1, 0),  Rgb(0.603922, 1, 0),  Rgb(0.619608, 1, 0),   Rgb(0.635294, 1, 0),   Rgb(0.65098, 1, 0),
-    Rgb(0.666667, 1, 0),  Rgb(0.682353, 1, 0),  Rgb(0.698039, 1, 0),   Rgb(0.713726, 1, 0),   Rgb(0.729412, 1, 0),
-    Rgb(0.745098, 1, 0),  Rgb(0.760784, 1, 0),  Rgb(0.776471, 1, 0),   Rgb(0.792157, 1, 0),   Rgb(0.807843, 1, 0),
-    Rgb(0.823529, 1, 0),  Rgb(0.839216, 1, 0),  Rgb(0.854902, 1, 0),   Rgb(0.870588, 1, 0),   Rgb(0.886275, 1, 0),
-    Rgb(0.901961, 1, 0),  Rgb(0.917647, 1, 0),  Rgb(0.933333, 1, 0),   Rgb(0.94902, 1, 0),    Rgb(0.964706, 1, 0),
-    Rgb(0.980392, 1, 0),  Rgb(0.996078, 1, 0),  Rgb(1, 0.988235, 0),   Rgb(1, 0.972549, 0),   Rgb(1, 0.956863, 0),
-    Rgb(1, 0.941176, 0),  Rgb(1, 0.92549, 0),   Rgb(1, 0.909804, 0),   Rgb(1, 0.894118, 0),   Rgb(1, 0.878431, 0),
-    Rgb(1, 0.862745, 0),  Rgb(1, 0.847059, 0),  Rgb(1, 0.831373, 0),   Rgb(1, 0.815686, 0),   Rgb(1, 0.8, 0),
-    Rgb(1, 0.784314, 0),  Rgb(1, 0.768627, 0),  Rgb(1, 0.752941, 0),   Rgb(1, 0.737255, 0),   Rgb(1, 0.721569, 0),
-    Rgb(1, 0.705882, 0),  Rgb(1, 0.690196, 0),  Rgb(1, 0.67451, 0),    Rgb(1, 0.658824, 0),   Rgb(1, 0.643137, 0),
-    Rgb(1, 0.627451, 0),  Rgb(1, 0.611765, 0),  Rgb(1, 0.596078, 0),   Rgb(1, 0.580392, 0),   Rgb(1, 0.564706, 0),
-    Rgb(1, 0.54902, 0),   Rgb(1, 0.533333, 0),  Rgb(1, 0.517647, 0),   Rgb(1, 0.501961, 0),   Rgb(1, 0.486275, 0),
-    Rgb(1, 0.470588, 0),  Rgb(1, 0.454902, 0),  Rgb(1, 0.439216, 0),   Rgb(1, 0.423529, 0),   Rgb(1, 0.407843, 0),
-    Rgb(1, 0.392157, 0),  Rgb(1, 0.376471, 0),  Rgb(1, 0.360784, 0),   Rgb(1, 0.345098, 0),   Rgb(1, 0.329412, 0),
-    Rgb(1, 0.313726, 0),  Rgb(1, 0.298039, 0),  Rgb(1, 0.282353, 0),   Rgb(1, 0.266667, 0),   Rgb(1, 0.25098, 0),
-    Rgb(1, 0.235294, 0),  Rgb(1, 0.219608, 0),  Rgb(1, 0.203922, 0),   Rgb(1, 0.188235, 0),   Rgb(1, 0.172549, 0),
-    Rgb(1, 0.156863, 0),  Rgb(1, 0.141176, 0),  Rgb(1, 0.12549, 0),    Rgb(1, 0.109804, 0),   Rgb(1, 0.0941176, 0),
-    Rgb(1, 0, 0),         Rgb(1, 0, 0),         Rgb(1, 0, 0),          Rgb(1, 0, 0),          Rgb(1, 0, 0),
-    Rgb(1, 0, 0)};
 
 static onet::lidar::PlaybackDevice *GetPlaybackDevice(const std::vector<std::string> &file_list)
 {
@@ -233,7 +164,6 @@ struct LidarRosDriver::Impl
         offset = addPointField(msg_pointcloud, "y", 1, sensor_msgs::PointField::FLOAT32, offset);
         offset = addPointField(msg_pointcloud, "z", 1, sensor_msgs::PointField::FLOAT32, offset);
         offset = addPointField(msg_pointcloud, "intensity", 1, sensor_msgs::PointField::FLOAT32, offset);
-        offset = addPointField(msg_pointcloud, "rgb", 1, sensor_msgs::PointField::UINT32, offset);
         offset = addPointField(msg_pointcloud, "utc_time", 1, sensor_msgs::PointField::UINT32, offset);
         offset = addPointField(msg_pointcloud, "ms_time", 1, sensor_msgs::PointField::UINT32, offset);
 
@@ -246,7 +176,6 @@ struct LidarRosDriver::Impl
         sensor_msgs::PointCloud2Iterator<float> iter_y(msg_pointcloud, "y");
         sensor_msgs::PointCloud2Iterator<float> iter_z(msg_pointcloud, "z");
         sensor_msgs::PointCloud2Iterator<float> iter_intensity(msg_pointcloud, "intensity");
-        sensor_msgs::PointCloud2Iterator<uint32_t> iter_rgb(msg_pointcloud, "rgb");
         sensor_msgs::PointCloud2Iterator<uint32_t> iter_utc_time(msg_pointcloud, "utc_time");
         sensor_msgs::PointCloud2Iterator<uint32_t> iter_ms_time(msg_pointcloud, "ms_time");
 
@@ -258,8 +187,6 @@ struct LidarRosDriver::Impl
             *iter_y = pt[1];
             *iter_z = pt[2];
             *iter_intensity = pt[3];
-            int idx = static_cast<int>(pt[3] * 255.0f);
-            *iter_rgb = color_table[idx].m_rgb;
             *iter_utc_time = pt.utc;
             *iter_ms_time = pt.time_stamp;
 
@@ -267,7 +194,6 @@ struct LidarRosDriver::Impl
             ++iter_y;
             ++iter_z;
             ++iter_intensity;
-            ++iter_rgb;
             ++iter_utc_time;
             ++iter_ms_time;
         }
