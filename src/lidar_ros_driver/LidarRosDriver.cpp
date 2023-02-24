@@ -186,7 +186,7 @@ struct LidarRosDriver::Impl
             *iter_x = pt[0];
             *iter_y = pt[1];
             *iter_z = pt[2];
-            *iter_intensity = pt[3];
+            *iter_intensity = pt[3] * 255.0f;
             *iter_utc_time = pt.utc;
             *iter_ms_time = pt.time_stamp;
 
